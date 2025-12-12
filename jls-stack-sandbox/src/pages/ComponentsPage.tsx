@@ -33,7 +33,7 @@ export function ComponentsPage() {
           <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 space-y-2">
             <h3 className="text-base font-semibold">Tag List</h3>
             <p className="text-xs text-slate-400">
-              A row of tags you can use to show filters, states, or categories.
+              A row of tags you can use to show categories.
             </p>
 
             <div className="flex flex-wrap gap-2">
@@ -48,9 +48,7 @@ export function ComponentsPage() {
               </span>
             </div>
 
-            <p className="text-xs text-slate-400">
-              Rule: use sky for “primary/active”, keep everything else neutral.
-            </p>
+           
           </div>
         </div>
       </section>
