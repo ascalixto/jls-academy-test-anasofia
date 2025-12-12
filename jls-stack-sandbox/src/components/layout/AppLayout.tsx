@@ -1,33 +1,44 @@
 import { NavLink, Outlet } from "react-router-dom"
 
+const baseLink =
+  "px-3 py-1.5 rounded-lg transition-colors border border-transparent"
+
+const activeLink =
+  "bg-sky-500/10 text-sky-100 border-sky-500/40"
+
+const inactiveLink =
+  "text-slate-300 hover:bg-slate-800/40 hover:text-slate-50 hover:border-slate-700"
+
 export function AppLayout() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50">
       {/* Top bar */}
       <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur">
-        <div className="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500 text-xs font-bold">
-              J
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            {/* Accent / mark */}
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-sky-600 text-xs font-bold text-sky-50">
+              A
             </span>
+
+            {/* Title + subtitle (Type Scale tokens) */}
             <div className="flex flex-col">
-              <span className="text-sm font-semibold">JLS Stack Sandbox</span>
-              <span className="text-xs text-slate-400">Week 2 – UI/UX & Layout</span>
+              <span className="text-2xl font-bold tracking-tight">
+                Adopt-a-Task
+              </span>
+              <span className="text-xs text-slate-400">
+                Organized • Collaborative • Creative
+              </span>
             </div>
           </div>
 
           <nav className="flex items-center gap-2 text-sm">
             <NavLink
               to="/"
-              className={({ isActive }: { isActive: boolean }) =>
-                [
-                  "px-3 py-1.5 rounded-lg transition-colors",
-                  isActive
-                    ? "bg-slate-800 text-slate-50"
-                    : "text-slate-300 hover:bg-slate-800/60 hover:text-slate-50",
-                ].join(" ")
-              }
               end
+              className={({ isActive }: { isActive: boolean }) =>
+                [baseLink, isActive ? activeLink : inactiveLink].join(" ")
+              }
             >
               Dashboard
             </NavLink>
@@ -35,12 +46,7 @@ export function AppLayout() {
             <NavLink
               to="/layout-sandbox"
               className={({ isActive }: { isActive: boolean }) =>
-                [
-                  "px-3 py-1.5 rounded-lg transition-colors",
-                  isActive
-                    ? "bg-slate-800 text-slate-50"
-                    : "text-slate-300 hover:bg-slate-800/60 hover:text-slate-50",
-                ].join(" ")
+                [baseLink, isActive ? activeLink : inactiveLink].join(" ")
               }
             >
               Layout Sandbox
@@ -49,12 +55,7 @@ export function AppLayout() {
             <NavLink
               to="/components"
               className={({ isActive }: { isActive: boolean }) =>
-                [
-                  "px-3 py-1.5 rounded-lg transition-colors",
-                  isActive
-                    ? "bg-slate-800 text-slate-50"
-                    : "text-slate-300 hover:bg-slate-800/60 hover:text-slate-50",
-                ].join(" ")
+                [baseLink, isActive ? activeLink : inactiveLink].join(" ")
               }
             >
               Components
@@ -63,12 +64,7 @@ export function AppLayout() {
             <NavLink
               to="/settings"
               className={({ isActive }: { isActive: boolean }) =>
-                [
-                  "px-3 py-1.5 rounded-lg transition-colors",
-                  isActive
-                    ? "bg-slate-800 text-slate-50"
-                    : "text-slate-300 hover:bg-slate-800/60 hover:text-slate-50",
-                ].join(" ")
+                [baseLink, isActive ? activeLink : inactiveLink].join(" ")
               }
             >
               Settings
@@ -77,12 +73,7 @@ export function AppLayout() {
             <NavLink
               to="/help"
               className={({ isActive }: { isActive: boolean }) =>
-                [
-                  "px-3 py-1.5 rounded-lg transition-colors",
-                  isActive
-                    ? "bg-slate-800 text-slate-50"
-                    : "text-slate-300 hover:bg-slate-800/60 hover:text-slate-50",
-                ].join(" ")
+                [baseLink, isActive ? activeLink : inactiveLink].join(" ")
               }
             >
               Help
@@ -92,8 +83,11 @@ export function AppLayout() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-5xl mx-auto px-4 py-6">
-        <Outlet />
+      <main className="mx-auto max-w-5xl px-4 py-6">
+        {/* Surface wrapper to make pages feel more “product-like” */}
+        <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4">
+          <Outlet />
+        </div>
       </main>
     </div>
   )
