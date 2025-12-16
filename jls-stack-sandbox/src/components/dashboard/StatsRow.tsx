@@ -24,10 +24,21 @@ export function StatsRow({ stats = defaultStats }: { stats?: Stat[] }) {
             key={idx}
             className="rounded-lg border border-slate-800 bg-slate-950/60 p-4"
           >
-            <p className="text-xs text-slate-400">{s.label}</p>
-            <p className="text-lg font-semibold">{s.value}</p>
+            {/* Label */}
+            <p className="text-xs text-slate-300">
+              {s.label}
+            </p>
+
+            {/* Value — white */}
+            <p className="text-lg font-semibold text-slate-100">
+              {s.value}
+            </p>
+
+            {/* Hint */}
             {s.hint ? (
-              <p className="mt-1 text-xs text-slate-500">{s.hint}</p>
+              <p className="mt-1 text-xs text-slate-400">
+                {s.hint}
+              </p>
             ) : null}
           </div>
         ))}

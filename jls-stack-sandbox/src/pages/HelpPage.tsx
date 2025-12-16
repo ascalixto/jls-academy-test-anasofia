@@ -1,33 +1,30 @@
 import { PageHeader } from "@/components/common/PageHeader"
-import { SectionCard } from "@/components/common/SectionCard"
+import { EmptyState } from "@/components/common/EmptyState"
+import { InfoRow } from "@/components/common/InfoRow"
 
 export function HelpPage() {
   return (
     <div className="space-y-6">
       <PageHeader
         title="Help & Documentation"
-        subtitle="Quick references and guidance for your JLS sandbox."
+        subtitle="Quick references for this sandbox, plus where to ask for help."
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <SectionCard title="Week 1 Docs" description="Setup and fundamentals">
-          <p className="text-sm text-slate-300">
-            Stack overview, environment setup, and first layout experiments.
-          </p>
-        </SectionCard>
-
-        <SectionCard title="Week 2 UI/UX" description="Layout & shell">
-          <p className="text-sm text-slate-300">
-            Routing, app shell, brand kit, and reusable components.
-          </p>
-        </SectionCard>
-
-        <SectionCard title="Asking for Help" description="When you feel stuck">
-          <p className="text-sm text-slate-300">
-            Use Slack, mentor hours, or tickets to unblock yourself early.
-          </p>
-        </SectionCard>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <InfoRow label="Repo" value="GitHub sandbox" hint="Same repo all week" />
+        <InfoRow
+          label="Routing"
+          value="React Router"
+          hint="Layout route + Outlet pattern"
+        />
       </div>
+
+      <EmptyState
+        title="No saved links yet"
+        description="Add links you keep using (docs, tickets, channels) so future-you wastes less time."
+        actionLabel="Add first link (later)"
+        onAction={() => {}}
+      />
     </div>
   )
 }

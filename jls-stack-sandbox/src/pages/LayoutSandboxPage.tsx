@@ -1,23 +1,26 @@
-import { LayoutSandbox } from "@/components/layout/LayoutSandbox"
 import { PageHeader } from "@/components/common/PageHeader"
-import { SectionCard } from "@/components/common/SectionCard"
+import { InlineAlert } from "@/components/common/InlineAlert"
+import { LayoutSandbox } from "@/components/layout/LayoutSandbox"
 
 export function LayoutSandboxPage() {
   return (
     <div className="space-y-6">
       <PageHeader
         title="Layout Sandbox"
-        subtitle="A playground for testing Tailwind layout patterns."
+        subtitle="A playground for practicing Tailwind layout patterns."
       />
 
-      <SectionCard
-        title="Layout Experiments"
-        description="Vertical stacks, grids, and responsive patterns"
-      >
-        <div className="rounded-xl border border-slate-800 overflow-hidden">
+      <InlineAlert
+        tone="subtle"
+        title="Tip"
+        description="If you see repeated UI blocks, extract them into components/common."
+      />
+
+      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+        <div className="overflow-hidden rounded-xl border border-slate-800">
           <LayoutSandbox />
         </div>
-      </SectionCard>
+      </div>
     </div>
   )
 }

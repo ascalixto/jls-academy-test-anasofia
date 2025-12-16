@@ -1,12 +1,13 @@
+import { PageHeader } from "@/components/common/PageHeader"
+import { EmptyState } from "@/components/common/EmptyState"
+
 export function QualityCheckPage() {
   return (
-    <div className="space-y-4">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight">Quality Check</h1>
-        <p className="text-sm text-slate-200">
-          A quick self-audit page for UI polish, consistency, and basic accessibility checks.
-        </p>
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        title="Quality Check"
+        subtitle="A quick self-audit page for UI polish, consistency, and basic accessibility checks."
+      />
 
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-sky-500/40 bg-sky-500/10 p-4 space-y-2">
@@ -27,6 +28,13 @@ export function QualityCheckPage() {
           </ul>
         </div>
       </section>
+
+      <EmptyState
+        title="No issues logged yet"
+        description="In a real tool, this could show saved QA notes, accessibility checks, or follow-ups."
+        actionLabel="Add first issue (later)"
+        onAction={() => {}}
+      />
     </div>
   )
 }

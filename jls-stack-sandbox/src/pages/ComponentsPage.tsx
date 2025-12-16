@@ -1,57 +1,86 @@
+import { PageHeader } from "@/components/common/PageHeader"
+import { EmptyState } from "@/components/common/EmptyState"
+import { InlineAlert } from "@/components/common/InlineAlert"
+import { InfoRow } from "@/components/common/InfoRow"
+import { Button } from "@/components/ui/button"
+
 export function ComponentsPage() {
   return (
-    <div className="space-y-8">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight">Component Gallery</h1>
-        <p className="text-sm text-slate-200">
-          A simple place to collect small UI patterns and components you might reuse later in JLS apps.
-        </p>
-        <p className="text-xs text-slate-400">
-          Keep it lightweight, consistent, and easy to scan.
-        </p>
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        title="Component Gallery"
+        subtitle="Mini internal style guide: reusable blocks used across the sandbox."
+      />
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Quick patterns</h2>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* InlineAlert */}
+        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+          <div className="text-sm font-semibold">InlineAlert</div>
+          <p className="text-sm text-slate-300">
+            Inline message block for status, tips, and warnings. Supports variants via{" "}
+            <span className="font-medium text-slate-100">tone</span>.
+          </p>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {/* Card 1 */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 space-y-2">
-            <h3 className="text-base font-semibold">Stat Card</h3>
-            <p className="text-xs text-slate-400">
-              A small card for showing numbers, like tasks completed or open tickets.
-            </p>
+          <div className="space-y-3">
+            <InlineAlert
+              tone="default"
+              title="Default"
+              description="Used for general callouts and product hints."
+              right={
+                <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs text-sky-100">
+                  Beta
+                </span>
+              }
+            />
 
-            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <p className="text-xs text-slate-400">Completed tasks</p>
-              <p className="text-2xl font-bold tracking-tight text-sky-100">24</p>
-              <p className="text-xs text-slate-400">Across teams this week</p>
-            </div>
-          </div>
+            <InlineAlert
+              tone="subtle"
+              title="Subtle"
+              description="Used for low-priority notes."
+            />
 
-          {/* Card 2 */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 space-y-2">
-            <h3 className="text-base font-semibold">Tag List</h3>
-            <p className="text-xs text-slate-400">
-              A row of tags you can use to show categories.
-            </p>
-
-            <div className="flex flex-wrap gap-2">
-              <span className="rounded-full border border-sky-500/40 bg-sky-500/10 px-3 py-1 text-xs text-sky-100">
-                sandbox
-              </span>
-              <span className="rounded-full border border-slate-700 bg-slate-900/50 px-3 py-1 text-xs text-slate-200">
-                stable
-              </span>
-              <span className="rounded-full border border-slate-700 bg-slate-900/50 px-3 py-1 text-xs text-slate-200">
-                needs review
-              </span>
-            </div>
-
-           
+            <InlineAlert
+              tone="danger"
+              title="Danger"
+              description="Used for warnings or risky actions."
+              right={
+                <Button size="sm" variant="destructive">
+                  Action
+                </Button>
+              }
+            />
           </div>
         </div>
-      </section>
+
+        {/* InfoRow */}
+        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+          <div className="text-sm font-semibold">InfoRow</div>
+          <p className="text-sm text-slate-300">
+            Consistent label/value rows for settings, metadata, and quick facts.
+          </p>
+
+          <div className="space-y-2">
+            <InfoRow label="Owner" value="Ana Sofia" hint="Placeholder user" />
+            <InfoRow label="Environment" value="Dev" hint="Local sandbox mode" />
+            <InfoRow label="Routes" value="Growing" />
+          </div>
+        </div>
+
+        {/* EmptyState */}
+        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 lg:col-span-2">
+          <div className="text-sm font-semibold">EmptyState</div>
+          <p className="text-sm text-slate-300">
+            Standard empty-state panel for places where content will exist later.
+          </p>
+
+          <EmptyState
+            title="No components pinned yet"
+            description="In a real tool, this could show saved patterns, favorites, or recent blocks."
+            actionLabel="Pin a component (later)"
+            onAction={() => {}}
+          />
+        </div>
+      </div>
     </div>
   )
 }

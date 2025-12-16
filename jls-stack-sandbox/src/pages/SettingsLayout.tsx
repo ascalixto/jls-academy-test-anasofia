@@ -1,57 +1,55 @@
 import { NavLink, Outlet } from "react-router-dom"
-
-const tabBase =
-  "px-3 py-1.5 rounded-lg border transition-colors text-sm"
-
-const tabActive =
-  "border-sky-500/40 bg-sky-500/10 text-sky-100"
-
-const tabInactive =
-  "border-slate-700 bg-slate-900/50 text-slate-300 hover:border-slate-600 hover:text-slate-50"
+import { PageHeader } from "@/components/common/PageHeader"
+import { InlineAlert } from "@/components/common/InlineAlert"
 
 export function SettingsLayout() {
   return (
-    <div className="space-y-8">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-sm text-slate-200">
-          Adjust basic preferences for your sandbox, like profile info and notifications.
-        </p>
-        <p className="text-xs text-slate-400">
-          Keep it simple: consistent UI now makes it easier to scale later.
-        </p>
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        title="Settings"
+        subtitle="Preferences for how this sandbox behaves (placeholder settings)."
+      />
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Preferences</h2>
+      <InlineAlert
+        tone="subtle"
+        title="Note"
+        description="These are demo settings for Week 2 routing + layout practice."
+      />
 
-        {/* Secondary nav / tabs */}
-        <nav className="flex gap-2">
-          <NavLink
-            to="."
-            end
-            className={({ isActive }: { isActive: boolean }) =>
-              [tabBase, isActive ? tabActive : tabInactive].join(" ")
-            }
-          >
-            Profile
-          </NavLink>
+      <nav className="flex flex-wrap gap-2 text-sm">
+        <NavLink
+          to="."
+          end
+          className={({ isActive }: { isActive: boolean }) =>
+            [
+              "px-3 py-1.5 rounded-lg border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40",
+              isActive
+                ? "border-sky-500/40 bg-sky-500/10 text-sky-100"
+                : "border-slate-800 bg-slate-900/40 text-slate-300 hover:border-sky-500/30 hover:text-slate-100",
+            ].join(" ")
+          }
+        >
+          Profile
+        </NavLink>
 
-          <NavLink
-            to="notifications"
-            className={({ isActive }: { isActive: boolean }) =>
-              [tabBase, isActive ? tabActive : tabInactive].join(" ")
-            }
-          >
-            Notifications
-          </NavLink>
-        </nav>
+        <NavLink
+          to="notifications"
+          className={({ isActive }: { isActive: boolean }) =>
+            [
+              "px-3 py-1.5 rounded-lg border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40",
+              isActive
+                ? "border-sky-500/40 bg-sky-500/10 text-sky-100"
+                : "border-slate-800 bg-slate-900/40 text-slate-300 hover:border-sky-500/30 hover:text-slate-100",
+            ].join(" ")
+          }
+        >
+          Notifications
+        </NavLink>
+      </nav>
 
-        {/* Nested content */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4">
-          <Outlet />
-        </div>
-      </section>
+      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+        <Outlet />
+      </div>
     </div>
   )
 }
