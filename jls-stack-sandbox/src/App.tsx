@@ -6,7 +6,7 @@ import { LayoutSandboxPage } from "./pages/LayoutSandboxPage"
 import { HelpPage } from "./pages/HelpPage"
 import { ComponentsPage } from "./pages/ComponentsPage"
 import { SettingsLayout } from "./pages/SettingsLayout"
-import { SettingsProfilePage } from "./pages/SettingsProfilePage"
+import SettingsPage from "./pages/SettingsPage"
 import { SettingsNotificationsPage } from "./pages/SettingsNotificationsPage"
 import { QualityCheckPage } from "./pages/QualityCheckPage"
 import { NotFoundPage } from "./pages/NotFoundPage"
@@ -24,7 +24,8 @@ function App() {
 
         {/* Settings (nested) */}
         <Route path="settings" element={<SettingsLayout />}>
-          <Route index element={<SettingsProfilePage />} />
+          
+          <Route index element={<SettingsPage />} />
           <Route
             path="notifications"
             element={<SettingsNotificationsPage />}
@@ -35,7 +36,7 @@ function App() {
         <Route path="help" element={<HelpPage />} />
         <Route path="quality-check" element={<QualityCheckPage />} />
 
-        {/* 404 — SEMPRE por último */}
+       
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
