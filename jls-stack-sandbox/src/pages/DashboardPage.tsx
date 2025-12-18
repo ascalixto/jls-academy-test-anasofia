@@ -11,7 +11,7 @@ export function DashboardPage() {
         title="Adopt a Task"
         subtitle="A collaborative sandbox to share and adopt tasks across teams."
         actions={
-          <Button className="bg-sky-500 text-slate-1050 hover:bg-sky-400">
+          <Button className="bg-primary text-primary-foreground hover:opacity-95">
             New task
           </Button>
         }
@@ -22,7 +22,7 @@ export function DashboardPage() {
         description="Keep the UI consistent: shared components first, page composition second."
         tone="default"
         right={
-          <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs text-sky-100">
+          <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-xs text-foreground">
             Beta
           </span>
         }

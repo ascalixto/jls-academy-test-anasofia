@@ -4,8 +4,10 @@ import { InfoRow } from "@/components/common/InfoRow"
 export function SettingsNotificationsPage() {
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Notification preferences</h2>
-      <p className="text-sm text-slate-300">
+      <h2 className="text-lg font-semibold text-foreground">
+        Notification preferences
+      </h2>
+      <p className="text-sm text-muted-foreground">
         Control how often this sandbox would “ping” you (placeholder).
       </p>
 

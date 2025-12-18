@@ -3,8 +3,8 @@ import { InfoRow } from "@/components/common/InfoRow"
 export function SettingsProfilePage() {
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Profile basics</h2>
-      <p className="text-sm text-slate-300">
+      <h2 className="text-lg font-semibold text-foreground">Profile basics</h2>
+      <p className="text-sm text-muted-foreground">
         Simple info about the person using this sandbox (placeholder).
       </p>
 

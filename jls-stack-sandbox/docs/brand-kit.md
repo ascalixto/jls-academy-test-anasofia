@@ -1,89 +1,87 @@
-## Identity
+Brand Kit 
 
-**Product name:** Adopt a Task
-
-**One-line purpose:**  
+Identity
+Product name: Adopt a Task
+One-line purpose:
 A collaborative tool where people can adopt tasks from other departments to improve workflows.
-
-**Tone / Feel:**  
+Tone / Feel:
 Organized, collaborative, creative
 
-## Color Tokens
+Color Tokens
+primary
 
-### primary
-- **Used for:** main actions, active navigation, key highlights
-- **Tailwind:** bg-sky-600, text-sky-50, hover:bg-sky-500
+Used for: main actions, active navigation, key highlights
 
-### background
-- **Used for:** app background
-- **Tailwind:** bg-slate-950, text-slate-50
+Tailwind: bg-sky-600 text-white hover:bg-sky-500
 
-### surface
-- **Used for:** cards and content containers
-- **Tailwind:** bg-slate-900/70, border-slate-800
+background
 
-### accent
-- **Used for:** numbers, labels, subtle highlights
-- **Tailwind:** text-sky-300, bg-sky-500/10
+Used for: app background
+Tailwind: bg-sky-50 text-slate-950
 
-### muted-text
-- **Used for:** helper text and descriptions
-- **Tailwind:** text-slate-400
+surface
 
-## Type Scale
+Used for: cards and content containers
 
-### pageTitle
-- **Usage:** main page titles
-- **Tailwind:** text-2xl font-bold tracking-tight
+Tailwind: bg-white/70 border-sky-100
+surface-strong (optional but useful)
 
-### sectionTitle
-- **Usage:** section headers
-- **Tailwind:** text-xl font-semibold
+Used for: stronger panels (sidebar/topbar)
+Tailwind: bg-white/90 border-sky-200
 
-### cardTitle
-- **Usage:** titles inside cards
-- **Tailwind:** text-base font-semibold
+accent
 
-### body
-- **Usage:** normal text
-- **Tailwind:** text-sm text-slate-200
+Used for: numbers, labels, subtle highlights
+Tailwind: text-sky-700 bg-sky-100
 
-### small
-- **Usage:** helper text, captions
-- **Tailwind:** text-xs text-slate-400
+muted-text
 
-## Type Scale
+Used for: helper text and descriptions
+Tailwind: text-slate-600
 
-### pageTitle
-- **Usage:** main page titles
-- **Tailwind:** text-2xl font-bold tracking-tight
+border
 
-### sectionTitle
-- **Usage:** section headers
-- **Tailwind:** text-xl font-semibold
+Used for: default borders/dividers
+Tailwind: border-sky-100
 
-### cardTitle
-- **Usage:** titles inside cards
-- **Tailwind:** text-base font-semibold
+Type Scale
+pageTitle
 
-### body
-- **Usage:** normal text
-- **Tailwind:** text-sm text-slate-200
+Usage: main page titles
+Tailwind: text-2xl font-bold tracking-tight text-slate-950
 
-### small
-- **Usage:** helper text, captions
-- **Tailwind:** text-xs text-slate-400
+sectionTitle
 
-## Spacing & Radii
+Usage: section headers
+Tailwind: text-xl font-semibold text-slate-900
 
-### sectionGap
-- **Usage:** spacing between major sections
-- **Tailwind:** space-y-8
+cardTitle
 
-### cardPadding
-- **Usage:** padding inside cards
-- **Tailwind:** p-4
+Usage: titles inside cards
+Tailwind: text-base font-semibold text-slate-900
 
-### cornerRadius
-- **Usage:** rounded corners for cards and surfaces
-- **Tailwind:** rounded-xl
+body
+
+Usage: normal text
+Tailwind: text-sm text-slate-800
+
+small
+
+Usage: helper text, captions
+Tailwind: text-xs text-slate-600
+
+Spacing & Radii
+sectionGap
+
+Usage: spacing between major sections
+Tailwind: space-y-8
+
+cardPadding
+
+Usage: padding inside cards
+Tailwind: p-4
+
+cornerRadius
+
+Usage: rounded corners for cards and surfaces
+Tailwind: rounded-xl

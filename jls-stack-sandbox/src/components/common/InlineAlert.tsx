@@ -18,23 +18,20 @@ export function InlineAlert({
   const styles =
     tone === "danger"
       ? {
-          wrapper:
-            "border-rose-500/40 bg-rose-500/10 text-slate-50",
-          title: "text-rose-100",
-          desc: "text-rose-100/80",
+          wrapper: "border-destructive/30 bg-destructive/10",
+          title: "text-foreground",
+          desc: "text-muted-foreground",
         }
       : tone === "subtle"
       ? {
-          wrapper:
-            "border-slate-800 bg-slate-900/40 text-slate-50",
-          title: "text-slate-100",
-          desc: "text-slate-300",
+          wrapper: "border-border bg-card/60",
+          title: "text-foreground",
+          desc: "text-muted-foreground",
         }
       : {
-          wrapper:
-            "border-sky-500/35 bg-sky-500/10 text-slate-50",
-          title: "text-sky-100",
-          desc: "text-slate-200",
+          wrapper: "border-primary/25 bg-primary/10",
+          title: "text-foreground",
+          desc: "text-muted-foreground",
         }
 
   return (

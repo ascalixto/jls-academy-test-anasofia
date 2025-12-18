@@ -14,11 +14,11 @@ export function EmptyState({
   onAction,
 }: EmptyStateProps) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-6 text-center">
-      <h3 className="text-base font-semibold text-slate-50">{title}</h3>
+    <div className="rounded-xl border border-border bg-card/70 p-6 text-center text-card-foreground">
+      <h3 className="text-base font-semibold text-foreground">{title}</h3>
 
       {description ? (
-        <p className="mx-auto mt-2 max-w-xl text-sm text-slate-300">
+        <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
           {description}
         </p>
       ) : null}

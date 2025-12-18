@@ -10,20 +10,22 @@ export function QualityCheckPage() {
       />
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-sky-500/40 bg-sky-500/10 p-4 space-y-2">
-          <h2 className="text-sm font-semibold text-sky-100">Consistency</h2>
-          <ul className="text-xs text-slate-200 space-y-1">
+        <div className="rounded-xl border border-border bg-card/70 p-4 space-y-2">
+          <h2 className="text-sm font-semibold text-foreground">Consistency</h2>
+          <ul className="text-xs space-y-1 text-muted-foreground">
             <li>• Headings follow the same scale (pageTitle / sectionTitle)</li>
             <li>• Cards use the same padding + radius</li>
             <li>• Primary actions look consistent</li>
           </ul>
         </div>
 
-        <div className="rounded-xl border border-sky-500/40 bg-sky-500/10 p-4 space-y-2">
-          <h2 className="text-sm font-semibold text-sky-100">Accessibility</h2>
-          <ul className="text-xs text-slate-200 space-y-1">
+        <div className="rounded-xl border border-border bg-card/70 p-4 space-y-2">
+          <h2 className="text-sm font-semibold text-foreground">
+            Accessibility
+          </h2>
+          <ul className="text-xs space-y-1 text-muted-foreground">
             <li>• Focus states visible on links and buttons</li>
-            <li>• Text contrast readable on dark background</li>
+            <li>• Text contrast readable on background</li>
             <li>• No layout breaks on small screens</li>
           </ul>
         </div>

@@ -16,8 +16,8 @@ export function LayoutSandboxPage() {
         description="If you see repeated UI blocks, extract them into components/common."
       />
 
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-        <div className="overflow-hidden rounded-xl border border-slate-800">
+      <div className="rounded-xl border border-border bg-card/60 p-4">
+        <div className="overflow-hidden rounded-xl border border-border">
           <LayoutSandbox />
         </div>
       </div>

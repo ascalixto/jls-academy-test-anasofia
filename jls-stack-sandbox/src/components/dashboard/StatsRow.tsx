@@ -22,23 +22,14 @@ export function StatsRow({ stats = defaultStats }: { stats?: Stat[] }) {
         {stats.map((s, idx) => (
           <div
             key={idx}
-            className="rounded-lg border border-slate-800 bg-slate-950/60 p-4"
+            className="rounded-lg border border-border bg-card/60 p-4"
           >
-            {/* Label */}
-            <p className="text-xs text-slate-300">
-              {s.label}
-            </p>
+            <p className="text-xs text-muted-foreground">{s.label}</p>
 
-            {/* Value — white */}
-            <p className="text-lg font-semibold text-slate-100">
-              {s.value}
-            </p>
+            <p className="text-lg font-semibold text-foreground">{s.value}</p>
 
-            {/* Hint */}
             {s.hint ? (
-              <p className="mt-1 text-xs text-slate-400">
-                {s.hint}
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{s.hint}</p>
             ) : null}
           </div>
         ))}

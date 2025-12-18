@@ -22,10 +22,10 @@ export function SettingsLayout() {
           end
           className={({ isActive }: { isActive: boolean }) =>
             [
-              "px-3 py-1.5 rounded-lg border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40",
+              "px-3 py-1.5 rounded-lg border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
               isActive
-                ? "border-sky-500/40 bg-sky-500/10 text-sky-100"
-                : "border-slate-800 bg-slate-900/40 text-slate-300 hover:border-sky-500/30 hover:text-slate-100",
+                ? "border-primary/25 bg-primary/10 text-foreground"
+                : "border-border bg-card/50 text-muted-foreground hover:border-primary/25 hover:text-foreground",
             ].join(" ")
           }
         >
@@ -36,10 +36,10 @@ export function SettingsLayout() {
           to="notifications"
           className={({ isActive }: { isActive: boolean }) =>
             [
-              "px-3 py-1.5 rounded-lg border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40",
+              "px-3 py-1.5 rounded-lg border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
               isActive
-                ? "border-sky-500/40 bg-sky-500/10 text-sky-100"
-                : "border-slate-800 bg-slate-900/40 text-slate-300 hover:border-sky-500/30 hover:text-slate-100",
+                ? "border-primary/25 bg-primary/10 text-foreground"
+                : "border-border bg-card/50 text-muted-foreground hover:border-primary/25 hover:text-foreground",
             ].join(" ")
           }
         >
@@ -47,7 +47,7 @@ export function SettingsLayout() {
         </NavLink>
       </nav>
 
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+      <div className="rounded-xl border border-border bg-card/60 p-4">
         <Outlet />
       </div>
     </div>

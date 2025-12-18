@@ -8,6 +8,7 @@ import { ComponentsPage } from "./pages/ComponentsPage"
 import { SettingsLayout } from "./pages/SettingsLayout"
 import SettingsPage from "./pages/SettingsPage"
 import { SettingsNotificationsPage } from "./pages/SettingsNotificationsPage"
+import CreateToolPage from "./pages/CreateToolPage" // ✅ NOVA PÁGINA
 import { QualityCheckPage } from "./pages/QualityCheckPage"
 import { NotFoundPage } from "./pages/NotFoundPage"
 
@@ -24,7 +25,6 @@ function App() {
 
         {/* Settings (nested) */}
         <Route path="settings" element={<SettingsLayout />}>
-          
           <Route index element={<SettingsPage />} />
           <Route
             path="notifications"
@@ -32,11 +32,14 @@ function App() {
           />
         </Route>
 
+        {/* Tools */}
+        <Route path="create-tool" element={<CreateToolPage />} />
+
         {/* System */}
         <Route path="help" element={<HelpPage />} />
         <Route path="quality-check" element={<QualityCheckPage />} />
 
-       
+        {/* 404 */}
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

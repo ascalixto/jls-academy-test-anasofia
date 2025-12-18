@@ -9,8 +9,8 @@ export function BadgePill({
 }) {
   const styles =
     tone === "default"
-      ? "bg-sky-500/10 text-sky-200 border-sky-500/30"
-      : "bg-slate-800 text-slate-200 border-slate-700"
+      ? "bg-primary/10 text-foreground border-primary/25"
+      : "bg-card/60 text-foreground border-border"
 
   return (
     <span

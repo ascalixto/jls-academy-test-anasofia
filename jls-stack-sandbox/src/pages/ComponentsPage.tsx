@@ -14,11 +14,11 @@ export function ComponentsPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* InlineAlert */}
-        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-          <div className="text-sm font-semibold">InlineAlert</div>
-          <p className="text-sm text-slate-300">
+        <div className="space-y-3 rounded-xl border border-border bg-card/60 p-4">
+          <div className="text-sm font-semibold text-foreground">InlineAlert</div>
+          <p className="text-sm text-muted-foreground">
             Inline message block for status, tips, and warnings. Supports variants via{" "}
-            <span className="font-medium text-slate-100">tone</span>.
+            <span className="font-medium text-foreground">tone</span>.
           </p>
 
           <div className="space-y-3">
@@ -27,17 +27,13 @@ export function ComponentsPage() {
               title="Default"
               description="Used for general callouts and product hints."
               right={
-                <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs text-sky-100">
+                <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-xs text-foreground">
                   Beta
                 </span>
               }
             />
 
-            <InlineAlert
-              tone="subtle"
-              title="Subtle"
-              description="Used for low-priority notes."
-            />
+            <InlineAlert tone="subtle" title="Subtle" description="Used for low-priority notes." />
 
             <InlineAlert
               tone="danger"
@@ -53,9 +49,9 @@ export function ComponentsPage() {
         </div>
 
         {/* InfoRow */}
-        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-          <div className="text-sm font-semibold">InfoRow</div>
-          <p className="text-sm text-slate-300">
+        <div className="space-y-3 rounded-xl border border-border bg-card/60 p-4">
+          <div className="text-sm font-semibold text-foreground">InfoRow</div>
+          <p className="text-sm text-muted-foreground">
             Consistent label/value rows for settings, metadata, and quick facts.
           </p>
 
@@ -67,9 +63,9 @@ export function ComponentsPage() {
         </div>
 
         {/* EmptyState */}
-        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 lg:col-span-2">
-          <div className="text-sm font-semibold">EmptyState</div>
-          <p className="text-sm text-slate-300">
+        <div className="space-y-3 rounded-xl border border-border bg-card/60 p-4 lg:col-span-2">
+          <div className="text-sm font-semibold text-foreground">EmptyState</div>
+          <p className="text-sm text-muted-foreground">
             Standard empty-state panel for places where content will exist later.
           </p>
 
