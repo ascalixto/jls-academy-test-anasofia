@@ -3,6 +3,7 @@ import { StatsRow } from "@/components/dashboard/StatsRow"
 import { InlineAlert } from "@/components/common/InlineAlert"
 import { InfoRow } from "@/components/common/InfoRow"
 import { Button } from "@/components/ui/button"
+import { ChecklistCard } from "@/components/common/ChecklistCard"
 
 export function DashboardPage() {
   return (
@@ -10,11 +11,7 @@ export function DashboardPage() {
       <PageHeader
         title="Adopt a Task"
         subtitle="A collaborative sandbox to share and adopt tasks across teams."
-        actions={
-          <Button size="sm">
-            New task
-          </Button>
-        }
+        actions={<Button size="sm">New task</Button>}
       />
 
       <InlineAlert
@@ -34,6 +31,17 @@ export function DashboardPage() {
         <InfoRow label="Owner" value="Ana Sofia" hint="Placeholder user" />
         <InfoRow label="Environment" value="Dev" hint="Local sandbox mode" />
       </div>
+
+      {/* Reuse: quality snapshot */}
+      <ChecklistCard
+        title="Quality snapshot"
+        description="Quick reminder of UI + a11y rules applied across this sandbox."
+        items={[
+          "Shared components reused across pages",
+          "Focus states visible on all interactive elements",
+          "Forms have labels, errors, and feedback states",
+        ]}
+      />
     </div>
   )
 }

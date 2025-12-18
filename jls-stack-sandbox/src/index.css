@@ -30,14 +30,14 @@
   --popover-foreground: oklch(0.17 0 0);
 
   /* Primary: sky-ish (actions, active nav) */
-  --primary: oklch(0.59 0.17 244);
+  --primary: oklch(0.52 0.18 244);
   --primary-foreground: oklch(0.985 0 0);
 
   --secondary: oklch(0.95 0.02 235);
   --secondary-foreground: oklch(0.22 0 0);
 
   --muted: oklch(0.95 0.02 235);
-  --muted-foreground: oklch(0.45 0 0);
+  --muted-foreground: oklch(0.40 0 0);
 
   --accent: oklch(0.93 0.04 235); 
   --accent-foreground: oklch(21.891% 0.00155 16.394);
@@ -56,7 +56,7 @@
   /* Sidebar tokens (light) */
   --sidebar: oklch(95.394% 0.01076 204.656); 
   --sidebar-foreground: oklch(0.17 0 0);
-  --sidebar-primary: oklch(0.59 0.17 244);
+  --sidebar-primary: oklch(0.48 0.17 244);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.93 0.04 235);
   --sidebar-accent-foreground: oklch(0.22 0 0);
