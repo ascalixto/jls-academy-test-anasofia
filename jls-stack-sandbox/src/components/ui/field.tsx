@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useId, useMemo } from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
@@ -105,6 +105,9 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/**
+ * FieldLabel to link with input via htmlFor (nor sure if needed tbh)
+ */
 function FieldLabel({
   className,
   ...props
@@ -136,14 +139,22 @@ function FieldTitle({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
+/**
+ * FieldDescription accepts id to connect input via aria-describedby, and srOnly for screen reader
+ */
+function FieldDescription({
+  className,
+  srOnly,
+  ...props
+}: React.ComponentProps<"p"> & { srOnly?: boolean }) {
   return (
     <p
       data-slot="field-description"
       className={cn(
-        "text-muted-foreground text-sm leading-normal font-normal group-has-[[data-orientation=horizontal]]/field:text-balance",
-        "last:mt-0 nth-last-2:-mt-1 [[data-variant=legend]+&]:-mt-1.5",
-        "[&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4",
+        srOnly ? "sr-only" : "text-muted-foreground text-sm leading-normal font-normal",
+        !srOnly &&
+          "group-has-[[data-orientation=horizontal]]/field:text-balance last:mt-0 nth-last-2:-mt-1 [[data-variant=legend]+&]:-mt-1.5",
+        !srOnly && "[&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4",
         className
       )}
       {...props}
@@ -181,6 +192,9 @@ function FieldSeparator({
   )
 }
 
+/**
+ * FieldError to receive id (input uses aria-describedby), keeps role="alert"
+ */
 function FieldError({
   className,
   children,
@@ -190,19 +204,14 @@ function FieldError({
   errors?: Array<{ message?: string } | undefined>
 }) {
   const content = useMemo(() => {
-    if (children) {
-      return children
-    }
-
-    if (!errors?.length) {
-      return null
-    }
+    if (children) return children
+    if (!errors?.length) return null
 
     const uniqueErrors = [
       ...new Map(errors.map((error) => [error?.message, error])).values(),
     ]
 
-    if (uniqueErrors?.length == 1) {
+    if (uniqueErrors?.length === 1) {
       return uniqueErrors[0]?.message
     }
 
@@ -216,9 +225,7 @@ function FieldError({
     )
   }, [children, errors])
 
-  if (!content) {
-    return null
-  }
+  if (!content) return null
 
   return (
     <div
@@ -232,6 +239,20 @@ function FieldError({
   )
 }
 
+/**
+ * Helper: consistent IDs for label/description/error
+ */
+function useFieldIds(name?: string) {
+  const uid = useId()
+  const base = name ? `field-${name}-${uid}` : `field-${uid}`
+
+  return {
+    inputId: `${base}-input`,
+    descriptionId: `${base}-description`,
+    errorId: `${base}-error`,
+  }
+}
+
 export {
   Field,
   FieldLabel,
@@ -243,4 +264,5 @@ export {
   FieldSet,
   FieldContent,
   FieldTitle,
+  useFieldIds,
 }

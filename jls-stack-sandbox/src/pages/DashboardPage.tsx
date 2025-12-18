@@ -11,7 +11,7 @@ export function DashboardPage() {
         title="Adopt a Task"
         subtitle="A collaborative sandbox to share and adopt tasks across teams."
         actions={
-          <Button className="bg-primary text-primary-foreground hover:opacity-95">
+          <Button size="sm">
             New task
           </Button>
         }
@@ -30,7 +30,7 @@ export function DashboardPage() {
 
       <StatsRow />
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <InfoRow label="Owner" value="Ana Sofia" hint="Placeholder user" />
         <InfoRow label="Environment" value="Dev" hint="Local sandbox mode" />
       </div>

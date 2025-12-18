@@ -36,6 +36,8 @@ export function InlineAlert({
 
   return (
     <div
+      role={tone === "danger" ? "alert" : undefined}
+      aria-live={tone !== "danger" ? "polite" : undefined}
       className={[
         "flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-start sm:justify-between",
         styles.wrapper,
@@ -45,6 +47,7 @@ export function InlineAlert({
         <div className={["text-sm font-semibold", styles.title].join(" ")}>
           {title}
         </div>
+
         {description ? (
           <div className={["text-sm", styles.desc].join(" ")}>
             {description}
