@@ -8,9 +8,12 @@ import { ComponentsPage } from "./pages/ComponentsPage"
 import { SettingsLayout } from "./pages/SettingsLayout"
 import SettingsPage from "./pages/SettingsPage"
 import { SettingsNotificationsPage } from "./pages/SettingsNotificationsPage"
-import CreateToolPage from "./pages/CreateToolPage" // ✅ NOVA PÁGINA
+import CreateToolPage from "./pages/CreateToolPage"
 import { QualityCheckPage } from "./pages/QualityCheckPage"
 import { NotFoundPage } from "./pages/NotFoundPage"
+
+// 👉 NEW: Ideas page
+import IdeasPage from "./pages/IdeasPage"
 
 function App() {
   return (
@@ -18,6 +21,9 @@ function App() {
       <Route path="/" element={<AppLayout />}>
         {/* Dashboard */}
         <Route index element={<DashboardPage />} />
+
+        {/* NEW: Ideas */}
+        <Route path="ideas" element={<IdeasPage />} />
 
         {/* Sandbox */}
         <Route path="layout-sandbox" element={<LayoutSandboxPage />} />

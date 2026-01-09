@@ -83,12 +83,14 @@ export function AppLayout() {
   const navGroups = useMemo<NavGroup[]>(
     () => [
       {
-        label: "Main",
-        items: [
-          { label: "Dashboard", to: "/", end: true },
-          { label: "Quality Check", to: "/quality-check", badge: "New" },
-        ],
-      },
+  label: "Main",
+  items: [
+    { label: "Dashboard", to: "/", end: true },
+    { label: "Ideas", to: "/ideas" },
+    { label: "Quality Check", to: "/quality-check", badge: "New" },
+  ],
+},
+
       {
         label: "Sandbox",
         items: [
