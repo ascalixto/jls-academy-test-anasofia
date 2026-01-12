@@ -297,6 +297,22 @@ export async function getProductIdeasPaginated(
   return result
 }
 
+export async function getActiveIdeasByCreatedAt(): Promise<ProductIdea[]> {
+  const q = query(
+    productIdeasCol(),
+    where("status", "==", "active"),
+    orderBy("createdAt", "desc")
+  )
+
+  const snapshot = await getDocs(q)
+
+  return snapshot.docs.map((d) => ({
+    id: d.id,
+    ...(d.data() as Omit<ProductIdea, "id">),
+  }))
+}
+
+
 /**
  * Important note (from the lesson):
  * Deleting a parent document does NOT automatically delete its subcollections.

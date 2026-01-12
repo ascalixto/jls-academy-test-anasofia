@@ -3,6 +3,7 @@ import type { ProductIdea, ProductIdeaStatus } from "../types/productIdeas"
 import {
   getAllProductIdeas,
   getFilteredProductIdeas,
+  getActiveIdeasByCreatedAt,
 } from "../lib/firestore/productIdeas"
 
 import { PageHeader } from "../components/common/PageHeader"
@@ -107,6 +108,20 @@ export default function IdeasPage() {
 
       setErrorMessage(`${message}\n\n${indexHint}`)
       setState("error")
+    }
+  }
+
+  async function handleTriggerIndex() {
+    try {
+      await getActiveIdeasByCreatedAt()
+      alert(
+        "Query ran. If an index was required, check the browser console for the Firestore index creation link."
+      )
+    } catch (err) {
+      console.error("Index trigger query error:", err)
+      alert(
+        "Query failed. Check the browser console — Firestore usually provides an index creation link."
+      )
     }
   }
 
@@ -230,6 +245,11 @@ export default function IdeasPage() {
           <Button size="sm" variant="outline" onClick={handleClear}>
             Clear
           </Button>
+
+          {/* TEMP: trigger a composite index requirement */}
+          <Button size="sm" variant="outline" onClick={handleTriggerIndex}>
+            Trigger index (temp)
+          </Button>
         </div>
 
         {/* Filter feedback (required) */}
@@ -240,7 +260,10 @@ export default function IdeasPage() {
       </SectionCard>
 
       {ideas.length === 0 ? (
-        <EmptyState title="No ideas found" description="Try a different status or tag." />
+        <EmptyState
+          title="No ideas found"
+          description="Try a different status or tag."
+        />
       ) : (
         <div className="space-y-4">
           {ideas.map((idea) => (
