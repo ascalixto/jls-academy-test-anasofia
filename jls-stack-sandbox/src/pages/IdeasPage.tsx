@@ -1,4 +1,3 @@
-// src/pages/IdeasPage.tsx
 import { useEffect, useMemo, useState } from "react"
 import type { ProductIdea, ProductIdeaStatus } from "../types/productIdeas"
 import {
@@ -23,6 +22,24 @@ import {
 type LoadState = "idle" | "loading" | "success" | "error"
 type StatusFilter = ProductIdeaStatus | "all"
 
+function formatDate(value: unknown) {
+  // Firestore Timestamp has toDate()
+  const maybeTs = value as { toDate?: () => Date } | null
+
+  if (maybeTs && typeof maybeTs.toDate === "function") {
+    const d = maybeTs.toDate()
+    return d.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
+
+  return "—"
+}
+
 export default function IdeasPage() {
   const [state, setState] = useState<LoadState>("idle")
   const [ideas, setIdeas] = useState<ProductIdea[]>([])
@@ -38,6 +55,15 @@ export default function IdeasPage() {
       status: status === "all" ? undefined : status,
       tag: cleanTag.length > 0 ? cleanTag : undefined,
     }
+  }, [status, tag])
+
+  const activeFiltersText = useMemo(() => {
+    const parts: string[] = []
+
+    if (status !== "all") parts.push(`Status: ${status}`)
+    if (tag.trim().length > 0) parts.push(`Tag: ${tag.trim()}`)
+
+    return parts.length > 0 ? parts.join(" • ") : "None"
   }, [status, tag])
 
   async function loadIdeas(input?: { status?: ProductIdeaStatus; tag?: string }) {
@@ -166,7 +192,10 @@ export default function IdeasPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <div className="text-sm font-medium text-foreground">Status</div>
-            <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
+            <Select
+              value={status}
+              onValueChange={(v) => setStatus(v as StatusFilter)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
@@ -188,8 +217,8 @@ export default function IdeasPage() {
               placeholder='Type a tag (example: "ops")'
             />
             <div className="text-xs text-muted-foreground">
-              Uses Firestore <span className="font-medium">array-contains</span> on{" "}
-              <span className="font-medium">tags</span>.
+              Uses Firestore <span className="font-medium">array-contains</span>{" "}
+              on <span className="font-medium">tags</span>.
             </div>
           </div>
         </div>
@@ -202,20 +231,30 @@ export default function IdeasPage() {
             Clear
           </Button>
         </div>
+
+        {/* Filter feedback (required) */}
+        <div className="pt-3 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">Active filters:</span>{" "}
+          {activeFiltersText}
+        </div>
       </SectionCard>
 
       {ideas.length === 0 ? (
-        <EmptyState
-          title="No ideas found"
-          description="Try a different status or tag."
-        />
+        <EmptyState title="No ideas found" description="Try a different status or tag." />
       ) : (
         <div className="space-y-4">
           {ideas.map((idea) => (
             <SectionCard key={idea.id} title={idea.title}>
               <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <BadgePill label={idea.status} />
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <BadgePill label={idea.status} />
+                  </div>
+
+                  {/* Created/Updated date (required) */}
+                  <div className="text-xs text-muted-foreground">
+                    Updated: {formatDate((idea as any).updatedAt)}
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
