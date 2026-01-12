@@ -1,3 +1,4 @@
+// src/components/layout/AppLayout.tsx
 import { useMemo, useState } from "react"
 import { NavLink, Outlet } from "react-router-dom"
 import { Button } from "@/components/ui/button"
@@ -44,8 +45,8 @@ function SidebarLink({
 
       {item.badge ? (
         <span className="shrink-0 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-foreground">
-  {item.badge}
-</span>
+          {item.badge}
+        </span>
       ) : null}
     </NavLink>
   )
@@ -83,14 +84,13 @@ export function AppLayout() {
   const navGroups = useMemo<NavGroup[]>(
     () => [
       {
-  label: "Main",
-  items: [
-    { label: "Dashboard", to: "/", end: true },
-    { label: "Ideas", to: "/ideas" },
-    { label: "Quality Check", to: "/quality-check", badge: "New" },
-  ],
-},
-
+        label: "Main",
+        items: [
+          { label: "Dashboard", to: "/", end: true },
+          { label: "Ideas", to: "/ideas" },
+          { label: "Quality Check", to: "/quality-check", badge: "New" },
+        ],
+      },
       {
         label: "Sandbox",
         items: [
@@ -115,7 +115,6 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Topbar */}
       <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
         <div className="flex h-14 items-center justify-between gap-3 px-4 lg:px-6">
           <div className="flex items-center gap-3">
@@ -145,10 +144,9 @@ export function AppLayout() {
               </div>
             </div>
 
-          
             <span className="hidden items-center rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-[11px] font-medium text-foreground md:inline-flex">
-  Env: Dev
-</span>
+              Env: Dev
+            </span>
           </div>
 
           <div className="flex items-center gap-2">

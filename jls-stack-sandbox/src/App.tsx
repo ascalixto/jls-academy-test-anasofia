@@ -1,3 +1,4 @@
+// src/App.tsx
 import { Routes, Route } from "react-router-dom"
 
 import { AppLayout } from "./components/layout/AppLayout"
@@ -12,17 +13,16 @@ import CreateToolPage from "./pages/CreateToolPage"
 import { QualityCheckPage } from "./pages/QualityCheckPage"
 import { NotFoundPage } from "./pages/NotFoundPage"
 
-// 👉 NEW: Ideas page
+// Ideas
 import IdeasPage from "./pages/IdeasPage"
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<AppLayout />}>
-        {/* Dashboard */}
         <Route index element={<DashboardPage />} />
 
-        {/* NEW: Ideas */}
+        {/* Ideas */}
         <Route path="ideas" element={<IdeasPage />} />
 
         {/* Sandbox */}
@@ -32,10 +32,7 @@ function App() {
         {/* Settings (nested) */}
         <Route path="settings" element={<SettingsLayout />}>
           <Route index element={<SettingsPage />} />
-          <Route
-            path="notifications"
-            element={<SettingsNotificationsPage />}
-          />
+          <Route path="notifications" element={<SettingsNotificationsPage />} />
         </Route>
 
         {/* Tools */}

@@ -1,4 +1,3 @@
-// src/lib/firestore/productIdeas.ts
 import { db } from "@/lib/firebase";
 import {
   addDoc,
@@ -12,9 +11,16 @@ import {
   serverTimestamp,
   updateDoc,
   where,
+  limit,
+  startAfter,
+  type DocumentSnapshot,
 } from "firebase/firestore";
 
-import type { ProductIdea, ProductIdeaNote, ProductIdeaStatus } from "@/types/productIdeas";
+import type {
+  ProductIdea,
+  ProductIdeaNote,
+  ProductIdeaStatus,
+} from "@/types/productIdeas";
 
 /* ---------------------------------------
    Collection + doc reference helpers
@@ -43,7 +49,7 @@ export function productIdeaNoteDoc(ideaId: string, noteId: string) {
 export async function createProductIdea(input: {
   title: string;
   summary: string;
-  status: ProductIdeaStatus; // you chose: must choose
+  status: ProductIdeaStatus;
   tags: string[];
   ownerId: string;
 }) {
@@ -80,7 +86,9 @@ export async function createProductIdeaNote(
    Read operations
 ---------------------------------------- */
 
-export async function getProductIdea(ideaId: string): Promise<ProductIdea | null> {
+export async function getProductIdea(
+  ideaId: string
+): Promise<ProductIdea | null> {
   const docSnap = await getDoc(productIdeaDoc(ideaId));
 
   if (!docSnap.exists()) return null;
@@ -101,14 +109,15 @@ export async function getAllProductIdeas(): Promise<ProductIdea[]> {
   }));
 }
 
-export async function getProductIdeaNotes(ideaId: string): Promise<ProductIdeaNote[]> {
+export async function getProductIdeaNotes(
+  ideaId: string
+): Promise<ProductIdeaNote[]> {
   const q = query(productIdeaNotesCol(ideaId), orderBy("createdAt", "desc"));
   const snapshot = await getDocs(q);
 
   return snapshot.docs.map((d) => ({
     id: d.id,
-    ideaId,
-    ...(d.data() as Omit<ProductIdeaNote, "id" | "ideaId">),
+    ...(d.data() as Omit<ProductIdeaNote, "id">),
   }));
 }
 
@@ -139,11 +148,10 @@ export async function deleteProductIdeaNote(ideaId: string, noteId: string) {
 }
 
 /* ---------------------------------------
-   Extension query
+   Lesson 3.3 - Query functions
 ---------------------------------------- */
 
 /**
- * Extension task:
  * Get product ideas filtered by status
  */
 export async function getProductIdeasByStatus(
@@ -161,6 +169,132 @@ export async function getProductIdeasByStatus(
     id: d.id,
     ...(d.data() as Omit<ProductIdea, "id">),
   }));
+}
+
+/**
+ * Get product ideas filtered by tag (array-contains)
+ */
+export async function getProductIdeasByTag(tag: string): Promise<ProductIdea[]> {
+  const q = query(
+    productIdeasCol(),
+    where("tags", "array-contains", tag),
+    orderBy("updatedAt", "desc")
+  );
+
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map((d) => ({
+    id: d.id,
+    ...(d.data() as Omit<ProductIdea, "id">),
+  }));
+}
+
+export type ProductIdeaFilters = {
+  status?: ProductIdeaStatus;
+  tag?: string;
+};
+
+
+export async function getFilteredProductIdeas(
+  filters: ProductIdeaFilters = {}
+): Promise<ProductIdea[]> {
+  let q = query(productIdeasCol(), orderBy("updatedAt", "desc"));
+
+  if (filters.status) {
+    q = query(q, where("status", "==", filters.status));
+  }
+
+  if (filters.tag && filters.tag.trim().length > 0) {
+    q = query(q, where("tags", "array-contains", filters.tag.trim()));
+  }
+
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map((d) => ({
+    id: d.id,
+    ...(d.data() as Omit<ProductIdea, "id">),
+  }));
+}
+
+
+export async function getProductIdeasPage(input: {
+  pageSize?: number;
+  lastDoc?: DocumentSnapshot;
+  filters?: ProductIdeaFilters;
+}): Promise<{
+  ideas: ProductIdea[];
+  lastDoc: DocumentSnapshot | null;
+  hasMore: boolean;
+}> {
+  const pageSize = input.pageSize ?? 10;
+  const filters = input.filters ?? {};
+
+  let q = query(productIdeasCol(), orderBy("updatedAt", "desc"), limit(pageSize));
+
+  if (filters.status) {
+    q = query(q, where("status", "==", filters.status));
+  }
+
+  if (filters.tag && filters.tag.trim().length > 0) {
+    q = query(q, where("tags", "array-contains", filters.tag.trim()));
+  }
+
+  if (input.lastDoc) {
+    q = query(q, startAfter(input.lastDoc));
+  }
+
+  const snapshot = await getDocs(q);
+
+  const ideas = snapshot.docs.map((d) => ({
+    id: d.id,
+    ...(d.data() as Omit<ProductIdea, "id">),
+  }));
+
+  const lastDoc = snapshot.docs[snapshot.docs.length - 1] ?? null;
+
+  return {
+    ideas,
+    lastDoc,
+    hasMore: snapshot.docs.length === pageSize,
+  };
+}
+/**
+ * Get product ideas filtered by ownerId
+ */
+export async function getProductIdeasByOwner(
+  ownerId: string
+): Promise<ProductIdea[]> {
+  const q = query(
+    productIdeasCol(),
+    where("ownerId", "==", ownerId),
+    orderBy("updatedAt", "desc")
+  )
+
+  const snapshot = await getDocs(q)
+
+  return snapshot.docs.map((d) => ({
+    id: d.id,
+    ...(d.data() as Omit<ProductIdea, "id">),
+  }))
+}
+
+
+export async function getProductIdeasPaginated(
+  pageSize: number,
+  lastDoc?: DocumentSnapshot,
+  filters?: ProductIdeaFilters
+): Promise<{
+  ideas: ProductIdea[]
+  lastDoc: DocumentSnapshot | null
+  hasMore: boolean
+}> {
+  const result = await getProductIdeasPage({
+    pageSize,
+    lastDoc,
+    filters,
+  })
+
+  return result
 }
 
 /**
