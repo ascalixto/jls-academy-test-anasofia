@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // DEVELOPMENT RULES - REMOVE BEFORE PRODUCTION
+    // These rules exist because Firebase Auth is NOT set up yet.
+    // Without Auth, request.auth == null for every request, and
+    // "production" rules would block the entire app with permission-denied.
+    //
+    // RISKS:
+    // - Anyone with your Firebase project config can read/write/delete data
+    // - A malicious user can bypass your UI and use their own scripts/SDK
+    // - Your Firebase bill can be abused (reads/writes/deletes)
+    //
+    // BEFORE GOING TO PRODUCTION:
+    // 1) Implement Firebase Auth in the sandbox
+    // 2) Switch to the production rules below (uncomment them)
+    // 3) Remove/disable these permissive dev rules entirely
+    // ==========================================
+
+    match /productIdeas/{ideaId} {
+      // TEMP: Unauthenticated access allowed for local development/testing
+      allow read, write: if true;
+
+      match /notes/{noteId} {
+        allow read, write: if true;
+      }
+    }
+
+    // ==========================================
+    // PRODUCTION RULES (commented out for now)
+    // Uncomment these ONLY after Firebase Auth is implemented.
+    //
+    // Access patterns:
+    // productIdeas
+    // - read: authenticated
+    // - create: authenticated + uid matches ownerId (new doc)
+    // - update/delete: authenticated + uid matches ownerId (existing doc)
+    //
+    // notes subcollection
+    // - read: authenticated
+    // - create: authenticated + uid matches authorId (new doc)
+    // - update: denied
+    // - delete: authenticated + uid matches authorId (existing doc)
+    //
+    // Includes validation: title must be a non-empty string < 100 chars.
+    // ==========================================
+
+    // function isSignedIn() {
+    //   return request.auth != null;
+    // }
+    //
+    // function hasValidTitle(data) {
+    //   return data.title is string
+    //     && data.title.size() > 0
+    //     && data.title.size() < 100;
+    // }
+    //
+    // match /productIdeas/{ideaId} {
+    //   // Read: allow if authenticated
+    //   allow read: if isSignedIn();
+    //
+    //   // Create: authenticated AND uid matches ownerId in new doc + validation
+    //   allow create: if isSignedIn()
+    //                 && request.resource.data.ownerId is string
+    //                 && request.resource.data.ownerId == request.auth.uid
+    //                 && hasValidTitle(request.resource.data);
+    //
+    //   // Update: authenticated AND uid matches ownerId in existing doc + validation
+    //   allow update: if isSignedIn()
+    //                 && resource.data.ownerId is string
+    //                 && resource.data.ownerId == request.auth.uid
+    //                 && hasValidTitle(request.resource.data);
+    //
+    //   // Delete: authenticated AND uid matches ownerId in existing doc
+    //   allow delete: if isSignedIn()
+    //                 && resource.data.ownerId is string
+    //                 && resource.data.ownerId == request.auth.uid;
+    //
+    //   match /notes/{noteId} {
+    //     // Read: allow if authenticated
+    //     allow read: if isSignedIn();
+    //
+    //     // Create: authenticated AND uid matches authorId in new doc
+    //     allow create: if isSignedIn()
+    //                   && request.resource.data.authorId is string
+    //                   && request.resource.data.authorId == request.auth.uid;
+    //
+    //     // Update: deny all (for now)
+    //     allow update: if false;
+    //
+    //     // Delete: authenticated AND uid matches authorId in existing doc
+    //     allow delete: if isSignedIn()
+    //                   && resource.data.authorId is string
+    //                   && resource.data.authorId == request.auth.uid;
+    //   }
+    // }
+
+  }
+}
