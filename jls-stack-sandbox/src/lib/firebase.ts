@@ -1,15 +1,7 @@
-// src/lib/firebase.ts
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp } from "firebase/app"
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore"
+import { getAuth, connectAuthEmulator, signInWithEmailAndPassword } from "firebase/auth"
 
-console.log("[firebase] projectId:", import.meta.env.VITE_FIREBASE_PROJECT_ID)
-console.log("[firebase] authDomain:", import.meta.env.VITE_FIREBASE_AUTH_DOMAIN)
-
-
-/**
- * Firebase configuration
- * Values come from .env
- */
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -17,9 +9,24 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
+}
 
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig)
 
-// Firestore instance
-export const db = getFirestore(app);
+export const db = getFirestore(app)
+export const auth = getAuth(app)
+
+if (import.meta.env.DEV) {
+  // Connect emulators
+  connectFirestoreEmulator(db, "127.0.0.1", 8080)
+  connectAuthEmulator(auth, "http://127.0.0.1:9099")
+
+  // Auto-login for local development (NO UI yet)
+  signInWithEmailAndPassword(auth, "ascalixto.jls@gmail.com", "SenhasParaEmulator")
+    .then(() => {
+      console.log("[Auth Emulator] Auto-login success")
+    })
+    .catch((err) => {
+      console.warn("[Auth Emulator] Auto-login failed", err?.code || err)
+    })
+}

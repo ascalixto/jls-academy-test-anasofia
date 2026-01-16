@@ -1,0 +1,92 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================
+    // Helper functions
+    // =========================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function isAdmin() {
+  return isSignedIn()
+    && (request.auth.token.admin is bool)
+    && request.auth.token.admin == true;
+}
+
+    function isNonEmptyString(value) {
+      return value is string && value.size() > 0;
+    }
+
+    function isValidStatus(status) {
+      return status in ['draft', 'active', 'paused', 'shipped'];
+    }
+
+    // =========================
+    // productIdeas collection
+    // =========================
+    match /productIdeas/{ideaId} {
+
+      // READ & LIST
+      allow get, list: if isSignedIn();
+
+      // CREATE
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == uid()
+        && isNonEmptyString(request.resource.data.title)
+        && isNonEmptyString(request.resource.data.summary)
+        && isValidStatus(request.resource.data.status)
+        && request.resource.data.tags is list;
+
+      // UPDATE
+      // Owners can update their own ideas
+      // Admins can update any idea
+      // ownerId cannot be changed
+      allow update: if isSignedIn()
+        && (
+          resource.data.ownerId == uid()
+          || isAdmin()
+        )
+        && request.resource.data.ownerId == resource.data.ownerId
+        && isNonEmptyString(request.resource.data.title)
+        && isNonEmptyString(request.resource.data.summary)
+        && isValidStatus(request.resource.data.status)
+        && request.resource.data.tags is list;
+
+      // DELETE
+      // Only owners can delete (admins cannot delete others' ideas)
+      allow delete: if isSignedIn()
+        && resource.data.ownerId == uid();
+
+      // =========================
+      // notes subcollection
+      // =========================
+      match /notes/{noteId} {
+
+        // READ & LIST
+        allow get, list: if isSignedIn();
+
+        // CREATE
+        allow create: if isSignedIn()
+          && request.resource.data.authorId == uid()
+          && isNonEmptyString(request.resource.data.body);
+
+        // UPDATE
+        // Not allowed (not covered in Lesson 3.6 tests)
+        allow update: if false;
+
+        // DELETE
+        allow delete: if isSignedIn()
+          && resource.data.authorId == uid();
+      }
+    }
+  }
+}
+
+

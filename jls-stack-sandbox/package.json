@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:rules": "vitest run tests/firestore.rules.test.ts",
+    "test:rules:watch": "vitest tests/firestore.rules.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -19,7 +21,7 @@
     "@tailwindcss/vite": "^4.1.17",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "firebase": "^12.7.0",
+    "firebase": "^12.8.0",
     "lucide-react": "^0.556.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
