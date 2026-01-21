@@ -15,10 +15,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-  return isSignedIn()
-    && (request.auth.token.admin is bool)
-    && request.auth.token.admin == true;
-}
+      return isSignedIn()
+        && (request.auth.token.admin is bool)
+        && request.auth.token.admin == true;
+    }
 
     function isNonEmptyString(value) {
       return value is string && value.size() > 0;
@@ -26,6 +26,16 @@ service cloud.firestore {
 
     function isValidStatus(status) {
       return status in ['draft', 'active', 'paused', 'shipped'];
+    }
+
+    function isValidPriority(priority) {
+      return priority in ['low', 'medium', 'high'];
+    }
+
+    function isValidArchivedAt() {
+      return !('archivedAt' in request.resource.data)
+        || request.resource.data.archivedAt == null
+        || request.resource.data.archivedAt is timestamp;
     }
 
     // =========================
@@ -42,12 +52,11 @@ service cloud.firestore {
         && isNonEmptyString(request.resource.data.title)
         && isNonEmptyString(request.resource.data.summary)
         && isValidStatus(request.resource.data.status)
-        && request.resource.data.tags is list;
+        && isValidPriority(request.resource.data.priority)
+        && request.resource.data.tags is list
+        && isValidArchivedAt();
 
       // UPDATE
-      // Owners can update their own ideas
-      // Admins can update any idea
-      // ownerId cannot be changed
       allow update: if isSignedIn()
         && (
           resource.data.ownerId == uid()
@@ -57,10 +66,11 @@ service cloud.firestore {
         && isNonEmptyString(request.resource.data.title)
         && isNonEmptyString(request.resource.data.summary)
         && isValidStatus(request.resource.data.status)
-        && request.resource.data.tags is list;
+        && isValidPriority(request.resource.data.priority)
+        && request.resource.data.tags is list
+        && isValidArchivedAt();
 
       // DELETE
-      // Only owners can delete (admins cannot delete others' ideas)
       allow delete: if isSignedIn()
         && resource.data.ownerId == uid();
 
@@ -78,7 +88,6 @@ service cloud.firestore {
           && isNonEmptyString(request.resource.data.body);
 
         // UPDATE
-        // Not allowed (not covered in Lesson 3.6 tests)
         allow update: if false;
 
         // DELETE
@@ -88,5 +97,3 @@ service cloud.firestore {
     }
   }
 }
-
-

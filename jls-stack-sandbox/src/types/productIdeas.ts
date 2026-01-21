@@ -34,6 +34,9 @@ export type ProductIdea = {
   ownerId: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+
+  // Assignment 4.1 (Archive is Not Delete)
+  archivedAt: Timestamp | null;
 };
 
 export type ProductIdeaCreateInput = {

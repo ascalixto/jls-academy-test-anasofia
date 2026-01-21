@@ -1,20 +1,21 @@
 // src/App.tsx
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route } from "react-router-dom";
 
-import { AppLayout } from "./components/layout/AppLayout"
-import { DashboardPage } from "./pages/DashboardPage"
-import { LayoutSandboxPage } from "./pages/LayoutSandboxPage"
-import { HelpPage } from "./pages/HelpPage"
-import { ComponentsPage } from "./pages/ComponentsPage"
-import { SettingsLayout } from "./pages/SettingsLayout"
-import SettingsPage from "./pages/SettingsPage"
-import { SettingsNotificationsPage } from "./pages/SettingsNotificationsPage"
-import CreateToolPage from "./pages/CreateToolPage"
-import { QualityCheckPage } from "./pages/QualityCheckPage"
-import { NotFoundPage } from "./pages/NotFoundPage"
+import { AppLayout } from "./components/layout/AppLayout";
+import { DashboardPage } from "./pages/DashboardPage";
+import { LayoutSandboxPage } from "./pages/LayoutSandboxPage";
+import { HelpPage } from "./pages/HelpPage";
+import { ComponentsPage } from "./pages/ComponentsPage";
+import { SettingsLayout } from "./pages/SettingsLayout";
+import SettingsPage from "./pages/SettingsPage";
+import { SettingsNotificationsPage } from "./pages/SettingsNotificationsPage";
+import CreateToolPage from "./pages/CreateToolPage";
+import { QualityCheckPage } from "./pages/QualityCheckPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
 
 // Ideas
-import IdeasPage from "./pages/IdeasPage"
+import IdeasPage from "./pages/IdeasPage";
+import ArchivedIdeasPage from "./pages/ArchivedIdeasPage";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
 
         {/* Ideas */}
         <Route path="ideas" element={<IdeasPage />} />
+        <Route path="ideas/archived" element={<ArchivedIdeasPage />} />
 
         {/* Sandbox */}
         <Route path="layout-sandbox" element={<LayoutSandboxPage />} />
@@ -46,7 +48,7 @@ function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
-  )
+  );
 }
 
-export default App
+export default App;

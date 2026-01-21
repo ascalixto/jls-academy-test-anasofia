@@ -1,3 +1,4 @@
+// src/lib/firestore/productIdeas.ts
 import { db } from "@/lib/firebase";
 import {
   addDoc,
@@ -20,6 +21,8 @@ import type {
   ProductIdea,
   ProductIdeaNote,
   ProductIdeaStatus,
+  ProductIdeaPriority,
+  ProductIdeaTag,
 } from "@/types/productIdeas";
 
 /* ---------------------------------------
@@ -50,15 +53,18 @@ export async function createProductIdea(input: {
   title: string;
   summary: string;
   status: ProductIdeaStatus;
-  tags: string[];
+  priority: ProductIdeaPriority;
+  tags: ProductIdeaTag[];
   ownerId: string;
 }) {
   const docRef = await addDoc(productIdeasCol(), {
     title: input.title,
     summary: input.summary,
     status: input.status,
+    priority: input.priority,
     tags: input.tags,
     ownerId: input.ownerId,
+    archivedAt: null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -121,16 +127,51 @@ export async function getProductIdeaNotes(
   }));
 }
 
+/**
+ * Assignment 4.1 Part A
+ * Show archived ideas (archivedAt != null)
+ */
+export async function getArchivedProductIdeas(): Promise<ProductIdea[]> {
+  const q = query(
+    productIdeasCol(),
+    where("archivedAt", "!=", null),
+    orderBy("archivedAt", "desc")
+  );
+
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map((d) => ({
+    id: d.id,
+    ...(d.data() as Omit<ProductIdea, "id">),
+  }));
+}
+
 /* ---------------------------------------
    Update operations
 ---------------------------------------- */
 
 export async function updateProductIdea(
   ideaId: string,
-  updates: Partial<Pick<ProductIdea, "title" | "summary" | "status" | "tags">>
+  updates: Partial<
+    Pick<ProductIdea, "title" | "summary" | "status" | "priority" | "tags">
+  >
 ) {
   await updateDoc(productIdeaDoc(ideaId), {
     ...updates,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function archiveProductIdea(ideaId: string) {
+  await updateDoc(productIdeaDoc(ideaId), {
+    archivedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function restoreProductIdea(ideaId: string) {
+  await updateDoc(productIdeaDoc(ideaId), {
+    archivedAt: null,
     updatedAt: serverTimestamp(),
   });
 }
@@ -194,7 +235,6 @@ export type ProductIdeaFilters = {
   tag?: string;
 };
 
-
 export async function getFilteredProductIdeas(
   filters: ProductIdeaFilters = {}
 ): Promise<ProductIdea[]> {
@@ -215,7 +255,6 @@ export async function getFilteredProductIdeas(
     ...(d.data() as Omit<ProductIdea, "id">),
   }));
 }
-
 
 export async function getProductIdeasPage(input: {
   pageSize?: number;
@@ -258,6 +297,7 @@ export async function getProductIdeasPage(input: {
     hasMore: snapshot.docs.length === pageSize,
   };
 }
+
 /**
  * Get product ideas filtered by ownerId
  */
@@ -268,33 +308,32 @@ export async function getProductIdeasByOwner(
     productIdeasCol(),
     where("ownerId", "==", ownerId),
     orderBy("updatedAt", "desc")
-  )
+  );
 
-  const snapshot = await getDocs(q)
+  const snapshot = await getDocs(q);
 
   return snapshot.docs.map((d) => ({
     id: d.id,
     ...(d.data() as Omit<ProductIdea, "id">),
-  }))
+  }));
 }
-
 
 export async function getProductIdeasPaginated(
   pageSize: number,
   lastDoc?: DocumentSnapshot,
   filters?: ProductIdeaFilters
 ): Promise<{
-  ideas: ProductIdea[]
-  lastDoc: DocumentSnapshot | null
-  hasMore: boolean
+  ideas: ProductIdea[];
+  lastDoc: DocumentSnapshot | null;
+  hasMore: boolean;
 }> {
   const result = await getProductIdeasPage({
     pageSize,
     lastDoc,
     filters,
-  })
+  });
 
-  return result
+  return result;
 }
 
 export async function getActiveIdeasByCreatedAt(): Promise<ProductIdea[]> {
@@ -302,16 +341,15 @@ export async function getActiveIdeasByCreatedAt(): Promise<ProductIdea[]> {
     productIdeasCol(),
     where("status", "==", "active"),
     orderBy("createdAt", "desc")
-  )
+  );
 
-  const snapshot = await getDocs(q)
+  const snapshot = await getDocs(q);
 
   return snapshot.docs.map((d) => ({
     id: d.id,
     ...(d.data() as Omit<ProductIdea, "id">),
-  }))
+  }));
 }
-
 
 /**
  * Important note (from the lesson):

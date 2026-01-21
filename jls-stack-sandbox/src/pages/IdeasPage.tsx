@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import type { ProductIdea, ProductIdeaStatus } from "../types/productIdeas"
 import {
   getAllProductIdeas,
-  getFilteredProductIdeas,
-  getActiveIdeasByCreatedAt,
+  getProductIdeasByStatus,
 } from "../lib/firestore/productIdeas"
 
 import { PageHeader } from "../components/common/PageHeader"
@@ -11,7 +10,6 @@ import { SectionCard } from "../components/common/SectionCard"
 import { EmptyState } from "../components/common/EmptyState"
 import { BadgePill } from "../components/common/BadgePill"
 import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
 import {
   Select,
   SelectContent,
@@ -39,6 +37,11 @@ function formatDate(value: unknown) {
   return "—"
 }
 
+function isNotArchived(idea: ProductIdea) {
+  const archivedAt = (idea as any).archivedAt
+  return archivedAt == null
+}
+
 export default function IdeasPage() {
   const [state, setState] = useState<LoadState>("idle")
   const [ideas, setIdeas] = useState<ProductIdea[]>([])
@@ -46,31 +49,24 @@ export default function IdeasPage() {
   const [selectedIdea, setSelectedIdea] = useState<ProductIdea | null>(null)
 
   const [status, setStatus] = useState<StatusFilter>("all")
-  const [tag, setTag] = useState("")
-
-  const filters = useMemo(() => {
-    const cleanTag = tag.trim()
-    return {
-      status: status === "all" ? undefined : status,
-      tag: cleanTag || undefined,
-    }
-  }, [status, tag])
 
   const activeFiltersText = useMemo(() => {
-    const parts: string[] = []
-    if (status !== "all") parts.push(`Status: ${status}`)
-    if (tag.trim()) parts.push(`Tag: ${tag.trim()}`)
-    return parts.length ? parts.join(" • ") : "None"
-  }, [status, tag])
+    return status === "all" ? "None" : `Status: ${status}`
+  }, [status])
 
-  async function loadIdeas(input?: { status?: ProductIdeaStatus; tag?: string }) {
+  async function loadIdeasByStatus(nextStatus: StatusFilter) {
     try {
       setState("loading")
       setErrorMessage("")
-      const data = input
-        ? await getFilteredProductIdeas(input)
-        : await getAllProductIdeas()
-      setIdeas(data)
+
+      const data =
+        nextStatus === "all"
+          ? await getAllProductIdeas()
+          : await getProductIdeasByStatus(nextStatus)
+
+      const visible = data.filter(isNotArchived)
+
+      setIdeas(visible)
       setState("success")
     } catch (err) {
       console.error(err)
@@ -79,14 +75,13 @@ export default function IdeasPage() {
     }
   }
 
-  async function handleTriggerIndex() {
-    await getActiveIdeasByCreatedAt()
-    alert("Query ran. Check console if Firestore requests an index.")
-  }
+  useEffect(() => {
+    loadIdeasByStatus("all")
+  }, [])
 
   useEffect(() => {
-    loadIdeas()
-  }, [])
+    loadIdeasByStatus(status)
+  }, [status])
 
   if (state === "loading") {
     return (
@@ -112,12 +107,9 @@ export default function IdeasPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Ideas"
-        subtitle="Filter product ideas by status and tag."
-      />
+      <PageHeader title="Ideas" subtitle="Filter ideas by status." />
 
-      <SectionCard title="Filters">
+      <SectionCard title="Status Filter">
         <div className="grid gap-4 md:grid-cols-2">
           <Select
             value={status}
@@ -135,23 +127,16 @@ export default function IdeasPage() {
             </SelectContent>
           </Select>
 
-          <Input
-            value={tag}
-            onChange={(e) => setTag(e.target.value)}
-            placeholder='Type a tag (example: "ops")'
-          />
-        </div>
-
-        <div className="flex gap-2 pt-4">
-          <Button size="sm" onClick={() => loadIdeas(filters)}>
-            Apply filters
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => loadIdeas()}>
-            Clear
-          </Button>
-          <Button size="sm" variant="outline" onClick={handleTriggerIndex}>
-            Trigger index
-          </Button>
+          <div className="flex items-center justify-start md:justify-end">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setStatus("all")}
+              disabled={status === "all"}
+            >
+              Clear
+            </Button>
+          </div>
         </div>
 
         <div className="pt-3 text-sm text-muted-foreground">
@@ -160,13 +145,16 @@ export default function IdeasPage() {
       </SectionCard>
 
       {ideas.length === 0 ? (
-        <EmptyState title="No ideas found" description="Try different filters." />
+        <EmptyState title="No ideas found" description="Try a different status." />
       ) : (
         <div className="space-y-4">
           {ideas.map((idea) => (
             <SectionCard key={idea.id} title={idea.title}>
               <div className="space-y-3">
-                <BadgePill label={idea.status} />
+                <div className="flex flex-wrap items-center gap-2">
+                  <BadgePill label={idea.status} />
+                  <BadgePill label={idea.priority} />
+                </div>
 
                 <div className="flex flex-wrap gap-2">
                   {idea.tags?.map((t) => (
@@ -178,7 +166,6 @@ export default function IdeasPage() {
                   Updated: {formatDate((idea as any).updatedAt)}
                 </div>
 
-                {/* ✅ BOTÃO EXPLÍCITO (requisito do capstone) */}
                 <div className="pt-2">
                   <Button
                     size="sm"
