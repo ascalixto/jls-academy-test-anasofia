@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
+import { Link } from "react-router-dom"
+
 import type { ProductIdea, ProductIdeaStatus } from "../types/productIdeas"
 import {
   getAllProductIdeas,
@@ -17,8 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select"
-
-import { IdeaDetailModal } from "../components/ideas/IdeaDetailModal"
 
 type LoadState = "idle" | "loading" | "success" | "error"
 type StatusFilter = ProductIdeaStatus | "all"
@@ -46,7 +46,6 @@ export default function IdeasPage() {
   const [state, setState] = useState<LoadState>("idle")
   const [ideas, setIdeas] = useState<ProductIdea[]>([])
   const [errorMessage, setErrorMessage] = useState("")
-  const [selectedIdea, setSelectedIdea] = useState<ProductIdea | null>(null)
 
   const [status, setStatus] = useState<StatusFilter>("all")
 
@@ -109,6 +108,16 @@ export default function IdeasPage() {
     <div className="space-y-6">
       <PageHeader title="Ideas" subtitle="Filter ideas by status." />
 
+      <div className="flex flex-wrap items-center gap-2">
+        <Button asChild size="sm">
+          <Link to="/ideas/new">New Idea</Link>
+        </Button>
+
+        <Button asChild variant="outline" size="sm">
+          <Link to="/ideas/archived">Archived Ideas</Link>
+        </Button>
+      </div>
+
       <SectionCard title="Status Filter">
         <div className="grid gap-4 md:grid-cols-2">
           <Select
@@ -167,25 +176,14 @@ export default function IdeasPage() {
                 </div>
 
                 <div className="pt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setSelectedIdea(idea)}
-                  >
-                    View details
+                  <Button asChild size="sm" variant="outline">
+                    <Link to={`/ideas/${idea.id}`}>Open</Link>
                   </Button>
                 </div>
               </div>
             </SectionCard>
           ))}
         </div>
-      )}
-
-      {selectedIdea && (
-        <IdeaDetailModal
-          idea={selectedIdea}
-          onClose={() => setSelectedIdea(null)}
-        />
       )}
     </div>
   )

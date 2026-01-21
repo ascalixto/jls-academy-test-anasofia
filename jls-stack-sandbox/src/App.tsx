@@ -16,6 +16,8 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 // Ideas
 import IdeasPage from "./pages/IdeasPage";
 import ArchivedIdeasPage from "./pages/ArchivedIdeasPage";
+import CreateIdeaPage from "./pages/CreateIdeaPage";
+import IdeaDetailPage from "./pages/IdeaDetailPage";
 
 function App() {
   return (
@@ -25,6 +27,8 @@ function App() {
 
         {/* Ideas */}
         <Route path="ideas" element={<IdeasPage />} />
+        <Route path="ideas/new" element={<CreateIdeaPage />} />
+        <Route path="ideas/:ideaId" element={<IdeaDetailPage />} />
         <Route path="ideas/archived" element={<ArchivedIdeasPage />} />
 
         {/* Sandbox */}
