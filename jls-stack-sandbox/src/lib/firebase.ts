@@ -22,7 +22,7 @@ if (import.meta.env.DEV) {
   connectAuthEmulator(auth, "http://127.0.0.1:9099")
 
   // Auto-login for local development (NO UI yet)
-  signInWithEmailAndPassword(auth, "ascalixto.jls@gmail.com", "SenhasParaEmulator")
+  signInWithEmailAndPassword(auth, "user1@test.com", "password123")
     .then(() => {
       console.log("[Auth Emulator] Auto-login success")
     })

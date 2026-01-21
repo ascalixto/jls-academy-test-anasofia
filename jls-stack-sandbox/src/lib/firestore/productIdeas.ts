@@ -7,6 +7,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -15,6 +16,7 @@ import {
   limit,
   startAfter,
   type DocumentSnapshot,
+  type Unsubscribe,
 } from "firebase/firestore";
 
 import type {
@@ -43,6 +45,11 @@ export function productIdeaNotesCol(ideaId: string) {
 
 export function productIdeaNoteDoc(ideaId: string, noteId: string) {
   return doc(db, "productIdeas", ideaId, "notes", noteId);
+}
+
+function isNotArchived(idea: ProductIdea) {
+  const archivedAt = (idea as any).archivedAt;
+  return archivedAt == null;
 }
 
 /* ---------------------------------------
@@ -123,7 +130,8 @@ export async function getProductIdeaNotes(
 
   return snapshot.docs.map((d) => ({
     id: d.id,
-    ...(d.data() as Omit<ProductIdeaNote, "id">),
+    ideaId,
+    ...(d.data() as Omit<ProductIdeaNote, "id" | "ideaId">),
   }));
 }
 
@@ -144,6 +152,102 @@ export async function getArchivedProductIdeas(): Promise<ProductIdea[]> {
     id: d.id,
     ...(d.data() as Omit<ProductIdea, "id">),
   }));
+}
+
+/* ---------------------------------------
+   Real-time (Assignment 4.2)
+---------------------------------------- */
+
+/**
+ * Real-time subscription for active ideas list.
+ * We filter out archived items on the client to avoid edge cases with missing archivedAt.
+ */
+export function subscribeActiveIdeas(input: {
+  onData: (ideas: ProductIdea[]) => void;
+  onError?: (error: unknown) => void;
+}): Unsubscribe {
+  const q = query(productIdeasCol(), orderBy("updatedAt", "desc"));
+
+  const unsub = onSnapshot(
+    q,
+    (snap) => {
+      const ideas = snap.docs
+        .map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<ProductIdea, "id">),
+        }))
+        .filter(isNotArchived);
+
+      input.onData(ideas);
+    },
+    (err) => {
+      if (input.onError) input.onError(err);
+    }
+  );
+
+  return unsub;
+}
+
+/**
+ * Real-time subscription for a single idea doc by id.
+ */
+export function subscribeIdeaById(input: {
+  ideaId: string;
+  onData: (idea: ProductIdea | null) => void;
+  onError?: (error: unknown) => void;
+}): Unsubscribe {
+  const ref = productIdeaDoc(input.ideaId);
+
+  const unsub = onSnapshot(
+    ref,
+    (snap) => {
+      if (!snap.exists()) {
+        input.onData(null);
+        return;
+      }
+      input.onData({
+        id: snap.id,
+        ...(snap.data() as Omit<ProductIdea, "id">),
+      });
+    },
+    (err) => {
+      if (input.onError) input.onError(err);
+    }
+  );
+
+  return unsub;
+}
+
+/**
+ * Assignment 4.2 Part B
+ * Real-time subscription for notes list under productIdeas/{ideaId}/notes
+ */
+export function subscribeIdeaNotes(input: {
+  ideaId: string;
+  onData: (notes: ProductIdeaNote[]) => void;
+  onError?: (error: unknown) => void;
+}): Unsubscribe {
+  const q = query(
+    productIdeaNotesCol(input.ideaId),
+    orderBy("createdAt", "desc")
+  );
+
+  const unsub = onSnapshot(
+    q,
+    (snap) => {
+      const notes = snap.docs.map((d) => ({
+        id: d.id,
+        ideaId: input.ideaId,
+        ...(d.data() as Omit<ProductIdeaNote, "id" | "ideaId">),
+      }));
+      input.onData(notes);
+    },
+    (err) => {
+      if (input.onError) input.onError(err);
+    }
+  );
+
+  return unsub;
 }
 
 /* ---------------------------------------
@@ -192,9 +296,6 @@ export async function deleteProductIdeaNote(ideaId: string, noteId: string) {
    Lesson 3.3 - Query functions
 ---------------------------------------- */
 
-/**
- * Get product ideas filtered by status
- */
 export async function getProductIdeasByStatus(
   status: ProductIdeaStatus
 ): Promise<ProductIdea[]> {
@@ -212,9 +313,6 @@ export async function getProductIdeasByStatus(
   }));
 }
 
-/**
- * Get product ideas filtered by tag (array-contains)
- */
 export async function getProductIdeasByTag(tag: string): Promise<ProductIdea[]> {
   const q = query(
     productIdeasCol(),
@@ -298,9 +396,6 @@ export async function getProductIdeasPage(input: {
   };
 }
 
-/**
- * Get product ideas filtered by ownerId
- */
 export async function getProductIdeasByOwner(
   ownerId: string
 ): Promise<ProductIdea[]> {
@@ -350,10 +445,3 @@ export async function getActiveIdeasByCreatedAt(): Promise<ProductIdea[]> {
     ...(d.data() as Omit<ProductIdea, "id">),
   }));
 }
-
-/**
- * Important note (from the lesson):
- * Deleting a parent document does NOT automatically delete its subcollections.
- * If you delete productIdeas/{ideaId}, the notes under /notes will still exist.
- * For production, you’d delete notes first or use a Cloud Function for cascading deletes.
- */

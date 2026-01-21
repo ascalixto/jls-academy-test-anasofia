@@ -1,18 +1,29 @@
 import { useEffect, useMemo, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 import { onAuthStateChanged, type User } from "firebase/auth"
 
 import { auth } from "@/lib/firebase"
-import { createProductIdea } from "../lib/firestore/productIdeas"
 
 import type {
+  ProductIdea,
+  ProductIdeaNote,
   ProductIdeaPriority,
   ProductIdeaStatus,
   ProductIdeaTag,
 } from "../types/productIdeas"
 
+import {
+  subscribeIdeaById,
+  subscribeIdeaNotes,
+  updateProductIdea,
+  archiveProductIdea,
+  createProductIdeaNote,
+} from "../lib/firestore/productIdeas"
+
 import { PageHeader } from "../components/common/PageHeader"
 import { SectionCard } from "../components/common/SectionCard"
+import { EmptyState } from "../components/common/EmptyState"
+import { BadgePill } from "../components/common/BadgePill"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import {
@@ -33,11 +44,34 @@ const ALL_TAGS: ProductIdeaTag[] = [
   "general",
 ]
 
-export default function CreateIdeaPage() {
+type LoadState = "loading" | "success" | "error"
+
+function formatDate(value: unknown) {
+  const maybeTs = value as { toDate?: () => Date } | null
+  if (maybeTs?.toDate) {
+    return maybeTs.toDate().toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
+  return "—"
+}
+
+export default function IdeaDetailPage() {
+  const { ideaId } = useParams()
   const navigate = useNavigate()
 
-  const [authState, setAuthState] = useState<"loading" | "ready">("loading")
-  const [user, setUser] = useState<User | null>(null)
+  // Live indicator for the main idea listener (Assignment 4.2 Part A)
+  const [liveStatus, setLiveStatus] = useState<"on" | "off">("off")
+
+  const [state, setState] = useState<LoadState>("loading")
+  const [errorMessage, setErrorMessage] = useState("")
+  const [idea, setIdea] = useState<ProductIdea | null>(null)
+
+  const [editMode, setEditMode] = useState(false)
 
   const [title, setTitle] = useState("")
   const [summary, setSummary] = useState("")
@@ -45,9 +79,28 @@ export default function CreateIdeaPage() {
   const [priority, setPriority] = useState<ProductIdeaPriority>("medium")
   const [tags, setTags] = useState<ProductIdeaTag[]>(["general"])
 
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [archiving, setArchiving] = useState(false)
+  const [saveError, setSaveError] = useState("")
+  const [saveSuccess, setSaveSuccess] = useState("")
+
+  // Notes (Assignment 4.2 Part B)
+  const [notes, setNotes] = useState<ProductIdeaNote[]>([])
+  const [notesState, setNotesState] = useState<"loading" | "success" | "error">("loading")
+  const [newNote, setNewNote] = useState("")
+  const [addingNote, setAddingNote] = useState(false)
+  const [noteError, setNoteError] = useState("")
+
+  // Auth (for authorId on notes)
+  const [authState, setAuthState] = useState<"loading" | "ready">("loading")
+  const [user, setUser] = useState<User | null>(null)
+
+  // Assignment 4.2 Part C (proof): debug counter
+  const [activeListeners, setActiveListeners] = useState(0)
+
+  const isArchived = useMemo(() => {
+    return idea ? (idea as any).archivedAt != null : false
+  }, [idea])
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -57,15 +110,88 @@ export default function CreateIdeaPage() {
     return () => unsub()
   }, [])
 
-  const canSubmit = useMemo(() => {
-    return (
-      authState === "ready" &&
-      !!user &&
-      title.trim().length > 0 &&
-      summary.trim().length > 0 &&
-      !submitting
-    )
-  }, [authState, user, title, summary, submitting])
+  // Real-time idea doc
+  useEffect(() => {
+    if (!ideaId) {
+      setState("error")
+      setErrorMessage("Missing ideaId.")
+      setLiveStatus("off")
+      return
+    }
+
+    // Part C proof: attach log + counter
+    console.log("[RT] idea listener attached", ideaId)
+    setActiveListeners((n) => n + 1)
+
+    setState("loading")
+    setErrorMessage("")
+    setLiveStatus("off")
+
+    const unsub = subscribeIdeaById({
+      ideaId,
+      onData: (data) => {
+        setIdea(data)
+        setLiveStatus("on")
+        setState("success")
+
+        if (data) {
+          setTitle(data.title ?? "")
+          setSummary(data.summary ?? "")
+          setStatus(data.status ?? "draft")
+          setPriority(data.priority ?? "medium")
+          setTags(
+            (data.tags && data.tags.length ? data.tags : ["general"]) as ProductIdeaTag[]
+          )
+        }
+      },
+      onError: (err) => {
+        console.error(err)
+        setLiveStatus("off")
+        setState("error")
+        setErrorMessage("Error loading idea (real-time).")
+      },
+    })
+
+    return () => {
+      // Part C proof: cleanup log + counter
+      console.log("[RT] idea listener cleanup", ideaId)
+      unsub()
+      setLiveStatus("off")
+      setActiveListeners((n) => Math.max(0, n - 1))
+    }
+  }, [ideaId])
+
+  // Real-time notes list
+  useEffect(() => {
+    if (!ideaId) return
+
+    // Part C proof: attach log + counter
+    console.log("[RT] notes listener attached", ideaId)
+    setActiveListeners((n) => n + 1)
+
+    setNotesState("loading")
+    setNoteError("")
+
+    const unsub = subscribeIdeaNotes({
+      ideaId,
+      onData: (data) => {
+        setNotes(data)
+        setNotesState("success")
+      },
+      onError: (err) => {
+        console.error(err)
+        setNotesState("error")
+        setNoteError("Failed to load notes (real-time).")
+      },
+    })
+
+    return () => {
+      // Part C proof: cleanup log + counter
+      console.log("[RT] notes listener cleanup", ideaId)
+      unsub()
+      setActiveListeners((n) => Math.max(0, n - 1))
+    }
+  }, [ideaId])
 
   function toggleTag(tag: ProductIdeaTag) {
     setTags((prev) => {
@@ -75,163 +201,379 @@ export default function CreateIdeaPage() {
     })
   }
 
-  async function handleSubmit() {
-    setError("")
-    setSuccess("")
+  async function handleSave() {
+    if (!ideaId) return
 
-    if (authState !== "ready") {
-      setError("Signing in… try again in a moment.")
-      return
-    }
-
-    if (!user) {
-      setError("You must be signed in to create an idea.")
-      return
-    }
+    setSaveError("")
+    setSaveSuccess("")
 
     const cleanTitle = title.trim()
     const cleanSummary = summary.trim()
 
     if (!cleanTitle) {
-      setError("Title is required.")
+      setSaveError("Title is required.")
       return
     }
     if (!cleanSummary) {
-      setError("Summary is required.")
+      setSaveError("Summary is required.")
       return
     }
 
     try {
-      setSubmitting(true)
-
-      const newId = await createProductIdea({
+      setSaving(true)
+      await updateProductIdea(ideaId, {
         title: cleanTitle,
         summary: cleanSummary,
         status,
         priority,
         tags,
-        ownerId: user.uid,
       })
-
-      setSuccess("Created! Redirecting…")
-      navigate(`/ideas/${newId}`)
+      setSaveSuccess("Saved.")
+      setEditMode(false)
     } catch (err) {
       console.error(err)
-      setError("Create failed. Check Firestore rules or emulator.")
+      setSaveError("Save failed. Check Firestore rules.")
     } finally {
-      setSubmitting(false)
+      setSaving(false)
     }
+  }
+
+  async function handleArchive() {
+    if (!ideaId) return
+
+    const ok = window.confirm(
+      "Archive this idea? You can restore it later from Archived Ideas."
+    )
+    if (!ok) return
+
+    try {
+      setArchiving(true)
+      await archiveProductIdea(ideaId)
+      navigate("/ideas")
+    } catch (err) {
+      console.error(err)
+      setSaveError("Archive failed. Check Firestore rules.")
+    } finally {
+      setArchiving(false)
+    }
+  }
+
+  async function handleAddNote() {
+    if (!ideaId) return
+    if (isArchived) return
+
+    const body = newNote.trim()
+    if (!body) return
+
+    setNoteError("")
+
+    if (authState !== "ready") {
+      setNoteError("Signing in… try again in a moment.")
+      return
+    }
+
+    if (!user) {
+      setNoteError("You must be signed in to add a note.")
+      return
+    }
+
+    try {
+      setAddingNote(true)
+      await createProductIdeaNote(ideaId, {
+        body,
+        authorId: user.uid,
+      })
+      // IMPORTANT: no manual refetch here. Listener will update notes list.
+      setNewNote("")
+    } catch (err) {
+      console.error(err)
+      setNoteError("Could not add note. Check permissions or rules.")
+    } finally {
+      setAddingNote(false)
+    }
+  }
+
+  if (state === "loading") {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Idea Detail" subtitle="Loading…" liveStatus={liveStatus} />
+        <SectionCard title="Loading">
+          <div className="h-4 w-1/2 rounded bg-muted" />
+        </SectionCard>
+      </div>
+    )
+  }
+
+  if (state === "error") {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Idea Detail" subtitle="Error" liveStatus={liveStatus} />
+        <SectionCard title="Error">
+          <pre className="text-xs">{errorMessage}</pre>
+        </SectionCard>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/ideas">Back to Ideas</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  if (!idea) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Idea Detail" subtitle="Not found" liveStatus={liveStatus} />
+        <EmptyState
+          title="Idea not found"
+          description="Check the URL or create a new idea."
+        />
+        <Button asChild variant="outline" size="sm">
+          <Link to="/ideas">Back to Ideas</Link>
+        </Button>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Create Idea"
-        subtitle="Create a new idea and start tracking it."
+        title="Idea Detail"
+        subtitle={editMode ? "Edit mode" : "View mode"}
+        liveStatus={liveStatus}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/ideas">Back</Link>
+            </Button>
+
+            {/* Part C proof: counter visible in UI */}
+            <span className="rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
+              Active listeners: {activeListeners}
+            </span>
+          </div>
+        }
       />
 
-      <div className="flex items-center gap-2">
-        <Button asChild variant="outline" size="sm">
-          <Link to="/ideas">Back to Ideas</Link>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setEditMode((v) => !v)}
+          disabled={saving || archiving}
+        >
+          {editMode ? "Cancel" : "Edit"}
         </Button>
+
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={!editMode || saving || archiving || isArchived}
+        >
+          {saving ? "Saving…" : "Save"}
+        </Button>
+
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={handleArchive}
+          disabled={archiving || saving || isArchived}
+        >
+          {archiving ? "Archiving…" : "Archive"}
+        </Button>
+
+        {isArchived && <BadgePill label="Archived" />}
       </div>
 
-      <SectionCard title="New Idea">
+      <SectionCard title="Current">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <BadgePill label={idea.status} />
+            <BadgePill label={idea.priority} />
+            {isArchived ? (
+              <span className="text-xs text-muted-foreground">
+                Archived: {formatDate((idea as any).archivedAt)}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="text-xs text-muted-foreground">
+            Updated: {formatDate((idea as any).updatedAt)}
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Fields">
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="text-sm font-medium">Title</div>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Short, clear title"
-              disabled={submitting}
-            />
+            {editMode ? (
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            ) : (
+              <div className="text-sm text-muted-foreground">{idea.title}</div>
+            )}
           </div>
 
           <div className="space-y-2">
             <div className="text-sm font-medium">Summary</div>
-            <Input
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              placeholder="What is it? Why does it matter?"
-              disabled={submitting}
-            />
+            {editMode ? (
+              <Input value={summary} onChange={(e) => setSummary(e.target.value)} />
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                {idea.summary || "—"}
+              </div>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <div className="text-sm font-medium">Status</div>
-              <Select
-                value={status}
-                onValueChange={(v) => setStatus(v as ProductIdeaStatus)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">draft</SelectItem>
-                  <SelectItem value="active">active</SelectItem>
-                  <SelectItem value="paused">paused</SelectItem>
-                  <SelectItem value="shipped">shipped</SelectItem>
-                </SelectContent>
-              </Select>
+              {editMode ? (
+                <Select
+                  value={status}
+                  onValueChange={(v) => setStatus(v as ProductIdeaStatus)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">draft</SelectItem>
+                    <SelectItem value="active">active</SelectItem>
+                    <SelectItem value="paused">paused</SelectItem>
+                    <SelectItem value="shipped">shipped</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="text-sm text-muted-foreground">{idea.status}</div>
+              )}
             </div>
 
             <div className="space-y-2">
               <div className="text-sm font-medium">Priority</div>
-              <Select
-                value={priority}
-                onValueChange={(v) => setPriority(v as ProductIdeaPriority)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">low</SelectItem>
-                  <SelectItem value="medium">medium</SelectItem>
-                  <SelectItem value="high">high</SelectItem>
-                </SelectContent>
-              </Select>
+              {editMode ? (
+                <Select
+                  value={priority}
+                  onValueChange={(v) => setPriority(v as ProductIdeaPriority)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">low</SelectItem>
+                    <SelectItem value="medium">medium</SelectItem>
+                    <SelectItem value="high">high</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="text-sm text-muted-foreground">{idea.priority}</div>
+              )}
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="text-sm font-medium">Tags</div>
-            <div className="flex flex-wrap gap-2">
-              {ALL_TAGS.map((t) => {
-                const selected = tags.includes(t)
-                return (
-                  <Button
-                    key={t}
-                    type="button"
-                    size="sm"
-                    variant={selected ? "default" : "outline"}
-                    onClick={() => toggleTag(t)}
-                    disabled={submitting}
-                  >
-                    {t}
-                  </Button>
-                )
-              })}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Selected: {tags.join(", ")}
-            </div>
+            {editMode ? (
+              <div className="flex flex-wrap gap-2">
+                {ALL_TAGS.map((t) => {
+                  const selected = tags.includes(t)
+                  return (
+                    <Button
+                      key={t}
+                      type="button"
+                      size="sm"
+                      variant={selected ? "default" : "outline"}
+                      onClick={() => toggleTag(t)}
+                    >
+                      {t}
+                    </Button>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {(idea.tags ?? []).map((t) => (
+                  <BadgePill key={t} label={t} />
+                ))}
+              </div>
+            )}
           </div>
 
-          {authState === "loading" && (
-            <div className="text-sm text-muted-foreground">
-              Signing in to Auth Emulator…
+          {saveError ? <div className="text-sm text-destructive">{saveError}</div> : null}
+          {saveSuccess ? <div className="text-sm">{saveSuccess}</div> : null}
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Notes">
+        <div className="space-y-3">
+          {notesState === "loading" ? (
+            <div className="space-y-2">
+              <div className="h-4 w-2/3 rounded bg-muted" />
+              <div className="h-4 w-1/2 rounded bg-muted" />
             </div>
-          )}
+          ) : null}
 
-          {error && <div className="text-sm text-destructive">{error}</div>}
-          {success && <div className="text-sm">{success}</div>}
+          {notesState === "error" ? (
+            <p className="text-sm text-destructive">
+              {noteError || "Failed to load notes."}
+            </p>
+          ) : null}
 
-          <div className="pt-2">
-            <Button onClick={handleSubmit} disabled={!canSubmit}>
-              {submitting ? "Creating…" : "Create Idea"}
-            </Button>
+          {notesState === "success" && notes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No notes yet.</p>
+          ) : null}
+
+          {notesState === "success" && notes.length > 0 ? (
+            <div className="space-y-2">
+              {notes.map((n) => (
+                <div key={n.id} className="rounded-md border p-2 text-sm">
+                  {n.body}
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="pt-2 space-y-2">
+            <div className="text-sm font-medium">Add note</div>
+
+            <textarea
+              className="flex min-h-[96px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              placeholder={
+                isArchived
+                  ? "Archived ideas can’t receive new notes."
+                  : authState !== "ready"
+                    ? "Signing in…"
+                    : !user
+                      ? "Sign in required"
+                      : "Write a quick note…"
+              }
+              disabled={isArchived || authState !== "ready" || !user || addingNote}
+            />
+
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={handleAddNote}
+                disabled={
+                  addingNote ||
+                  isArchived ||
+                  authState !== "ready" ||
+                  !user ||
+                  newNote.trim().length === 0
+                }
+              >
+                {addingNote ? "Adding…" : "Add Note"}
+              </Button>
+
+              {isArchived ? (
+                <span className="text-xs text-muted-foreground">
+                  This idea is archived.
+                </span>
+              ) : null}
+            </div>
+
+            {noteError ? (
+              <p className="text-xs text-destructive">{noteError}</p>
+            ) : null}
           </div>
         </div>
       </SectionCard>
