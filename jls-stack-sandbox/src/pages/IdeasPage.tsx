@@ -3,8 +3,8 @@ import { Link } from "react-router-dom"
 
 import type { ProductIdea, ProductIdeaStatus } from "../types/productIdeas"
 import {
-  getAllProductIdeas,
-  getProductIdeasByStatus,
+  subscribeToActiveIdeas,
+  subscribeToActiveIdeasByStatus,
 } from "../lib/firestore/productIdeas"
 
 import { PageHeader } from "../components/common/PageHeader"
@@ -37,11 +37,6 @@ function formatDate(value: unknown) {
   return "—"
 }
 
-function isNotArchived(idea: ProductIdea) {
-  const archivedAt = (idea as any).archivedAt
-  return archivedAt == null
-}
-
 export default function IdeasPage() {
   const [state, setState] = useState<LoadState>("idle")
   const [ideas, setIdeas] = useState<ProductIdea[]>([])
@@ -53,33 +48,48 @@ export default function IdeasPage() {
     return status === "all" ? "None" : `Status: ${status}`
   }, [status])
 
-  async function loadIdeasByStatus(nextStatus: StatusFilter) {
-    try {
-      setState("loading")
-      setErrorMessage("")
+  useEffect(() => {
+    setState("loading")
+    setErrorMessage("")
 
-      const data =
-        nextStatus === "all"
-          ? await getAllProductIdeas()
-          : await getProductIdeasByStatus(nextStatus)
+    let didReceiveFirstSnapshot = false
 
-      const visible = data.filter(isNotArchived)
-
-      setIdeas(visible)
-      setState("success")
-    } catch (err) {
-      console.error(err)
-      setErrorMessage("Error fetching ideas.")
-      setState("error")
+    const onFirstData = () => {
+      if (!didReceiveFirstSnapshot) {
+        didReceiveFirstSnapshot = true
+        setState("success")
+      }
     }
-  }
 
-  useEffect(() => {
-    loadIdeasByStatus("all")
-  }, [])
+    const unsubscribe =
+      status === "all"
+        ? subscribeToActiveIdeas(
+            (nextIdeas) => {
+              setIdeas(nextIdeas)
+              onFirstData()
+            },
+            (err) => {
+              console.error(err)
+              setErrorMessage("Error fetching ideas.")
+              setState("error")
+            }
+          )
+        : subscribeToActiveIdeasByStatus(
+            status,
+            (nextIdeas) => {
+              setIdeas(nextIdeas)
+              onFirstData()
+            },
+            (err) => {
+              console.error(err)
+              setErrorMessage("Error fetching ideas.")
+              setState("error")
+            }
+          )
 
-  useEffect(() => {
-    loadIdeasByStatus(status)
+    return () => {
+      unsubscribe()
+    }
   }, [status])
 
   if (state === "loading") {

@@ -1,4 +1,3 @@
-// src/lib/firestore/productIdeas.ts
 import { db } from "@/lib/firebase";
 import {
   addDoc,
@@ -96,7 +95,7 @@ export async function createProductIdeaNote(
 }
 
 /* ---------------------------------------
-   Read operations
+   Read operations (get-once)
 ---------------------------------------- */
 
 export async function getProductIdea(
@@ -155,18 +154,54 @@ export async function getArchivedProductIdeas(): Promise<ProductIdea[]> {
 }
 
 /* ---------------------------------------
-   Real-time (Assignment 4.2)
+   Real-time (Lesson 4.2)
 ---------------------------------------- */
 
 /**
  * Real-time subscription for active ideas list.
- * We filter out archived items on the client to avoid edge cases with missing archivedAt.
+ * We listen to "all ideas ordered by updatedAt" and filter out archived on the client
+ * to avoid edge cases with older docs missing archivedAt.
  */
 export function subscribeActiveIdeas(input: {
   onData: (ideas: ProductIdea[]) => void;
   onError?: (error: unknown) => void;
 }): Unsubscribe {
   const q = query(productIdeasCol(), orderBy("updatedAt", "desc"));
+
+  const unsub = onSnapshot(
+    q,
+    (snap) => {
+      const ideas = snap.docs
+        .map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<ProductIdea, "id">),
+        }))
+        .filter(isNotArchived);
+
+      input.onData(ideas);
+    },
+    (err) => {
+      if (input.onError) input.onError(err);
+    }
+  );
+
+  return unsub;
+}
+
+/**
+ * Real-time subscription for active ideas filtered by status.
+ * We still filter archived client-side for the same "missing archivedAt" edge case.
+ */
+export function subscribeActiveIdeasByStatus(input: {
+  status: ProductIdeaStatus;
+  onData: (ideas: ProductIdea[]) => void;
+  onError?: (error: unknown) => void;
+}): Unsubscribe {
+  const q = query(
+    productIdeasCol(),
+    where("status", "==", input.status),
+    orderBy("updatedAt", "desc")
+  );
 
   const unsub = onSnapshot(
     q,
@@ -219,7 +254,7 @@ export function subscribeIdeaById(input: {
 }
 
 /**
- * Assignment 4.2 Part B
+ * Lesson 4.2
  * Real-time subscription for notes list under productIdeas/{ideaId}/notes
  */
 export function subscribeIdeaNotes(input: {
@@ -248,6 +283,65 @@ export function subscribeIdeaNotes(input: {
   );
 
   return unsub;
+}
+
+/* ---------------------------------------
+   Lesson 4.2 - Course-style wrappers
+---------------------------------------- */
+
+export function subscribeToActiveIdeas(
+  onNext: (ideas: ProductIdea[]) => void,
+  onError?: (err: unknown) => void
+): Unsubscribe {
+  return subscribeActiveIdeas({
+    onData: onNext,
+    onError,
+  });
+}
+
+export function subscribeToActiveIdeasByStatus(
+  status: ProductIdeaStatus,
+  onNext: (ideas: ProductIdea[]) => void,
+  onError?: (err: unknown) => void
+): Unsubscribe {
+  return subscribeActiveIdeasByStatus({
+    status,
+    onData: onNext,
+    onError,
+  });
+}
+
+export function subscribeToIdeaById(
+  ideaId: string,
+  onNext: (idea: ProductIdea | null) => void,
+  onError?: (err: unknown) => void
+): Unsubscribe {
+  return subscribeIdeaById({
+    ideaId,
+    onData: onNext,
+    onError,
+  });
+}
+
+export function subscribeToIdeaNotes(
+  ideaId: string,
+  onNext: (notes: ProductIdeaNote[]) => void,
+  onError?: (err: unknown) => void
+): Unsubscribe {
+  return subscribeIdeaNotes({
+    ideaId,
+    onData: onNext,
+    onError,
+  });
+}
+
+/**
+ * Optional debug helper to "prove realtime" by bumping updatedAt.
+ */
+export async function touchIdea(ideaId: string) {
+  await updateDoc(productIdeaDoc(ideaId), {
+    updatedAt: serverTimestamp(),
+  });
 }
 
 /* ---------------------------------------
@@ -293,7 +387,7 @@ export async function deleteProductIdeaNote(ideaId: string, noteId: string) {
 }
 
 /* ---------------------------------------
-   Lesson 3.3 - Query functions
+   Lesson 3.3 - Query functions (get-once)
 ---------------------------------------- */
 
 export async function getProductIdeasByStatus(
