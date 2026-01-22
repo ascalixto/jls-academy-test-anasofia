@@ -1,7 +1,8 @@
-// src/components/layout/AppLayout.tsx
 import { useMemo, useState } from "react"
 import { NavLink, Outlet } from "react-router-dom"
 import { Button } from "@/components/ui/button"
+import { Toaster } from "@/components/ui/sonner"
+import { toast } from "sonner"
 
 type NavItem = {
   label: string
@@ -150,7 +151,11 @@ export function AppLayout() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toast.success("Toasts working!")}
+            >
               Open Docs
             </Button>
           </div>
@@ -205,6 +210,8 @@ export function AppLayout() {
           </div>
         </main>
       </div>
+
+      <Toaster />
     </div>
   )
 }

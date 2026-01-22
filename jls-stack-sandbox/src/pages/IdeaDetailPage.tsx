@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { onAuthStateChanged, type User } from "firebase/auth"
+import { toast } from "sonner"
 
 import { auth } from "@/lib/firebase"
 
@@ -22,10 +23,10 @@ import {
 
 import { PageHeader } from "../components/common/PageHeader"
 import { SectionCard } from "../components/common/SectionCard"
-import { EmptyState } from "../components/common/EmptyState"
 import { BadgePill } from "../components/common/BadgePill"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
+import { Skeleton } from "../components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -33,6 +34,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select"
+
+// state components
+import { EmptyState } from "../components/states/EmptyState"
+import { ErrorState } from "../components/states/ErrorState"
 
 const ALL_TAGS: ProductIdeaTag[] = [
   "copywriting",
@@ -64,7 +69,7 @@ export default function IdeaDetailPage() {
   const { ideaId } = useParams()
   const navigate = useNavigate()
 
-  // Live indicator for the main idea listener (Assignment 4.2 Part A)
+  // Live indicator for the main idea listener 
   const [liveStatus, setLiveStatus] = useState<"on" | "off">("off")
 
   const [state, setState] = useState<LoadState>("loading")
@@ -84,18 +89,23 @@ export default function IdeaDetailPage() {
   const [saveError, setSaveError] = useState("")
   const [saveSuccess, setSaveSuccess] = useState("")
 
-  // Notes (Assignment 4.2 Part B)
+  // Notes
   const [notes, setNotes] = useState<ProductIdeaNote[]>([])
-  const [notesState, setNotesState] = useState<"loading" | "success" | "error">("loading")
+  const [notesState, setNotesState] = useState<"loading" | "success" | "error">(
+    "loading"
+  )
   const [newNote, setNewNote] = useState("")
   const [addingNote, setAddingNote] = useState(false)
   const [noteError, setNoteError] = useState("")
+
+  // next-action button can focus note input
+  const noteBoxRef = useRef<HTMLTextAreaElement | null>(null)
 
   // Auth (for authorId on notes)
   const [authState, setAuthState] = useState<"loading" | "ready">("loading")
   const [user, setUser] = useState<User | null>(null)
 
-  // Assignment 4.2 Part C (proof): debug counter
+  // debug counter
   const [activeListeners, setActiveListeners] = useState(0)
 
   const isArchived = useMemo(() => {
@@ -149,6 +159,7 @@ export default function IdeaDetailPage() {
         setLiveStatus("off")
         setState("error")
         setErrorMessage("Error loading idea (real-time).")
+        toast.error("Failed to load idea")
       },
     })
 
@@ -182,6 +193,7 @@ export default function IdeaDetailPage() {
         console.error(err)
         setNotesState("error")
         setNoteError("Failed to load notes (real-time).")
+        toast.error("Failed to load notes")
       },
     })
 
@@ -212,10 +224,12 @@ export default function IdeaDetailPage() {
 
     if (!cleanTitle) {
       setSaveError("Title is required.")
+      toast.error("Title is required")
       return
     }
     if (!cleanSummary) {
       setSaveError("Summary is required.")
+      toast.error("Summary is required")
       return
     }
 
@@ -229,10 +243,12 @@ export default function IdeaDetailPage() {
         tags,
       })
       setSaveSuccess("Saved.")
+      toast.success("Changes saved")
       setEditMode(false)
     } catch (err) {
       console.error(err)
       setSaveError("Save failed. Check Firestore rules.")
+      toast.error("Could not save changes")
     } finally {
       setSaving(false)
     }
@@ -249,10 +265,12 @@ export default function IdeaDetailPage() {
     try {
       setArchiving(true)
       await archiveProductIdea(ideaId)
+      toast.message("Idea archived")
       navigate("/ideas")
     } catch (err) {
       console.error(err)
       setSaveError("Archive failed. Check Firestore rules.")
+      toast.error("Archive failed")
     } finally {
       setArchiving(false)
     }
@@ -269,11 +287,13 @@ export default function IdeaDetailPage() {
 
     if (authState !== "ready") {
       setNoteError("Signing in… try again in a moment.")
+      toast.error("Auth not ready yet")
       return
     }
 
     if (!user) {
       setNoteError("You must be signed in to add a note.")
+      toast.error("You must be signed in")
       return
     }
 
@@ -283,22 +303,29 @@ export default function IdeaDetailPage() {
         body,
         authorId: user.uid,
       })
+      toast.success("Note added")
       // IMPORTANT: no manual refetch here. Listener will update notes list.
       setNewNote("")
     } catch (err) {
       console.error(err)
       setNoteError("Could not add note. Check permissions or rules.")
+      toast.error("Could not add note")
     } finally {
       setAddingNote(false)
     }
   }
 
+  // ✅ UI State Contract: Loading → Error → Empty → Success
   if (state === "loading") {
     return (
       <div className="space-y-6">
         <PageHeader title="Idea Detail" subtitle="Loading…" liveStatus={liveStatus} />
         <SectionCard title="Loading">
-          <div className="h-4 w-1/2 rounded bg-muted" />
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-4 w-1/3" />
+          </div>
         </SectionCard>
       </div>
     )
@@ -308,9 +335,12 @@ export default function IdeaDetailPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Idea Detail" subtitle="Error" liveStatus={liveStatus} />
-        <SectionCard title="Error">
-          <pre className="text-xs">{errorMessage}</pre>
-        </SectionCard>
+
+        <ErrorState
+          message={errorMessage || "Error loading idea."}
+          onRetry={() => window.location.reload()}
+        />
+
         <Button asChild variant="outline" size="sm">
           <Link to="/ideas">Back to Ideas</Link>
         </Button>
@@ -325,6 +355,14 @@ export default function IdeaDetailPage() {
         <EmptyState
           title="Idea not found"
           description="Check the URL or create a new idea."
+          actionLabel="Create idea"
+          onAction={() => {
+            window.location.href = "/ideas/new"
+          }}
+          secondaryActionLabel="Back to Ideas"
+          onSecondaryAction={() => {
+            window.location.href = "/ideas"
+          }}
         />
         <Button asChild variant="outline" size="sm">
           <Link to="/ideas">Back to Ideas</Link>
@@ -345,7 +383,6 @@ export default function IdeaDetailPage() {
               <Link to="/ideas">Back</Link>
             </Button>
 
-            {/* Part C proof: counter visible in UI */}
             <span className="rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
               Active listeners: {activeListeners}
             </span>
@@ -505,8 +542,8 @@ export default function IdeaDetailPage() {
         <div className="space-y-3">
           {notesState === "loading" ? (
             <div className="space-y-2">
-              <div className="h-4 w-2/3 rounded bg-muted" />
-              <div className="h-4 w-1/2 rounded bg-muted" />
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-4 w-1/2" />
             </div>
           ) : null}
 
@@ -516,8 +553,17 @@ export default function IdeaDetailPage() {
             </p>
           ) : null}
 
+          {/* empty notes state must explain + next action */}
           {notesState === "success" && notes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No notes yet.</p>
+            <EmptyState
+              title="No notes yet"
+              description="This idea doesn’t have any notes yet. Add the first one to track progress or decisions."
+              actionLabel="Write first note"
+              onAction={() => {
+                noteBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+                noteBoxRef.current?.focus()
+              }}
+            />
           ) : null}
 
           {notesState === "success" && notes.length > 0 ? (
@@ -534,6 +580,7 @@ export default function IdeaDetailPage() {
             <div className="text-sm font-medium">Add note</div>
 
             <textarea
+              ref={noteBoxRef}
               className="flex min-h-[96px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
@@ -571,9 +618,7 @@ export default function IdeaDetailPage() {
               ) : null}
             </div>
 
-            {noteError ? (
-              <p className="text-xs text-destructive">{noteError}</p>
-            ) : null}
+            {noteError ? <p className="text-xs text-destructive">{noteError}</p> : null}
           </div>
         </div>
       </SectionCard>

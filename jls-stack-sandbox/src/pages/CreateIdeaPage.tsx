@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { onAuthStateChanged, type User } from "firebase/auth"
+import { toast } from "sonner"
 
 import { auth } from "@/lib/firebase"
 import { createProductIdea } from "../lib/firestore/productIdeas"
@@ -81,11 +82,13 @@ export default function CreateIdeaPage() {
 
     if (authState !== "ready") {
       setError("Signing in… try again in a moment.")
+      toast.error("Auth not ready yet")
       return
     }
 
     if (!user) {
       setError("You must be signed in to create an idea.")
+      toast.error("You must be signed in")
       return
     }
 
@@ -94,10 +97,12 @@ export default function CreateIdeaPage() {
 
     if (!cleanTitle) {
       setError("Title is required.")
+      toast.error("Title is required")
       return
     }
     if (!cleanSummary) {
       setError("Summary is required.")
+      toast.error("Summary is required")
       return
     }
 
@@ -116,10 +121,12 @@ export default function CreateIdeaPage() {
       })
 
       setSuccess("Created! Redirecting…")
+      toast.success("Idea created")
       navigate(`/ideas/${newId}`)
     } catch (err) {
       console.error(err)
       setError("Create failed. Check Firestore rules or emulator.")
+      toast.error("Create failed")
     } finally {
       setSubmitting(false)
     }

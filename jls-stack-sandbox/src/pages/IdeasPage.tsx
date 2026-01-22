@@ -2,14 +2,10 @@ import { useEffect, useMemo, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 
 import type { ProductIdea, ProductIdeaStatus, ProductIdeaTag } from "../types/productIdeas"
-import {
-  fetchIdeasPage,
-  type IdeaListFilters,
-} from "../lib/firestore/productIdeas"
+import { fetchIdeasPage, type IdeaListFilters } from "../lib/firestore/productIdeas"
 
 import { PageHeader } from "../components/common/PageHeader"
 import { SectionCard } from "../components/common/SectionCard"
-import { EmptyState } from "../components/common/EmptyState"
 import { BadgePill } from "../components/common/BadgePill"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -20,6 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select"
+
+// state components
+import { IdeasListSkeleton } from "../components/states/IdeasListSkeleton"
+import { ErrorState } from "../components/states/ErrorState"
+import { EmptyState } from "../components/states/EmptyState"
 
 const PAGE_SIZE = 10
 
@@ -56,6 +57,7 @@ function getParam(sp: URLSearchParams, key: string, fallback = "") {
 }
 
 export default function IdeasPage() {
+
   const [searchParams, setSearchParams] = useSearchParams()
 
   const filters: IdeaListFilters = useMemo(() => {
@@ -80,6 +82,9 @@ export default function IdeasPage() {
   const [loadingMore, setLoadingMore] = useState(false)
 
   const hasMore = cursor != null
+
+  // retry key forces the main fetch effect to re-run without page refresh
+  const [retryKey, setRetryKey] = useState(0)
 
   // Local input state for search typing (debounced into URL)
   const [qInput, setQInput] = useState(filters.q ?? "")
@@ -122,7 +127,17 @@ export default function IdeasPage() {
     setSearchParams(new URLSearchParams(), { replace: true })
   }
 
-  // Load first page whenever URL-backed filters change
+  // differentiate "fresh account" vs "filters/search mismatch"
+  const hasAnyFilterActive = useMemo(() => {
+    return (
+      !!filters.q ||
+      (filters.status && filters.status !== "all") ||
+      !!filters.tag ||
+      filters.archived === true
+    )
+  }, [filters])
+
+  // Load first page whenever URL-backed filters change OR retry is requested
   useEffect(() => {
     let alive = true
 
@@ -143,7 +158,7 @@ export default function IdeasPage() {
         setCursor(res.nextCursor)
         setState("success")
       } catch (err) {
-        console.error(err)
+        console.error(err) // log error
         if (!alive) return
         setErrorMessage(
           "Failed to load ideas. If Firestore asks for an index, create it and retry."
@@ -157,7 +172,7 @@ export default function IdeasPage() {
     return () => {
       alive = false
     }
-  }, [filters.archived, filters.status, filters.tag, filters.q])
+  }, [filters.archived, filters.status, filters.tag, filters.q, retryKey])
 
   async function onLoadMore() {
     if (!cursor) return
@@ -175,7 +190,7 @@ export default function IdeasPage() {
       setIdeas((prev) => [...prev, ...res.items])
       setCursor(res.nextCursor)
     } catch (err) {
-      console.error(err)
+      console.error(err) //  log error
       setErrorMessage("Failed to load more ideas.")
       setState("error")
     } finally {
@@ -192,7 +207,6 @@ export default function IdeasPage() {
     return parts.join(" • ")
   }, [filters.archived, filters.status, filters.tag, filters.q])
 
-  // Pagination UX: "Showing X…" (total unknown)
   const progressText = useMemo(() => {
     if (state !== "success") return ""
     if (ideas.length === 0) return ""
@@ -280,19 +294,40 @@ export default function IdeasPage() {
         </div>
       </SectionCard>
 
+      {/* error recovery without full refresh */}
       {state === "loading" ? (
-        <SectionCard title="Loading">
-          <div className="h-4 w-1/2 rounded bg-muted" />
-        </SectionCard>
+        <IdeasListSkeleton />
       ) : state === "error" ? (
-        <SectionCard title="Error">
-          <pre className="text-xs">{errorMessage}</pre>
-        </SectionCard>
-      ) : ideas.length === 0 ? (
-        <EmptyState
-          title="No ideas match these filters"
-          description="Try clearing search, changing status/tag, or toggling Active/Archived."
+        <ErrorState
+          message={errorMessage || "Failed to load ideas."}
+          onRetry={() => {
+            setRetryKey((k) => k + 1)
+          }}
         />
+      ) : ideas.length === 0 ? (
+        hasAnyFilterActive ? (
+          <EmptyState
+            title="No ideas match this view"
+            description="Your filters or search didn’t return any results."
+            actionLabel="Clear filters"
+            onAction={() => {
+              resetList()
+            }}
+            secondaryActionLabel="Create idea"
+            onSecondaryAction={() => {
+              window.location.href = "/ideas/new"
+            }}
+          />
+        ) : (
+          <EmptyState
+            title="No ideas exist yet"
+            description="Get started by creating your first product idea."
+            actionLabel="Create idea"
+            onAction={() => {
+              window.location.href = "/ideas/new"
+            }}
+          />
+        )
       ) : (
         <div className="space-y-4">
           {ideas.map((idea) => (
@@ -325,14 +360,12 @@ export default function IdeasPage() {
 
           <div className="flex flex-col items-center gap-2 pt-2">
             <div className="text-xs text-muted-foreground">
-              {hasMore ? `Showing ${ideas.length}+ (load more to continue)` : `Showing ${ideas.length} (end of list)`}
+              {hasMore
+                ? `Showing ${ideas.length}+ (load more to continue)`
+                : `Showing ${ideas.length} (end of list)`}
             </div>
 
-            <Button
-              variant="outline"
-              onClick={onLoadMore}
-              disabled={!hasMore || loadingMore}
-            >
+            <Button variant="outline" onClick={onLoadMore} disabled={!hasMore || loadingMore}>
               {loadingMore ? "Loading…" : hasMore ? "Load more" : "No more results"}
             </Button>
           </div>
