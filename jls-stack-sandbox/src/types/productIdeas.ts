@@ -24,6 +24,10 @@ export type ProductIdeaTag =
 export type ProductIdea = {
   id: string;
   title: string;
+
+  // Lesson 4.3 (search + consistent ordering)
+  titleLower?: string;
+
   summary: string;
   status: ProductIdeaStatus;
 

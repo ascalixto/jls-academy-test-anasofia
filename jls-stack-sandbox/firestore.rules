@@ -38,6 +38,12 @@ service cloud.firestore {
         || request.resource.data.archivedAt is timestamp;
     }
 
+    // Lesson 4.3 (search/order field)
+    function isValidTitleLower() {
+      return !('titleLower' in request.resource.data)
+        || isNonEmptyString(request.resource.data.titleLower);
+    }
+
     // =========================
     // productIdeas collection
     // =========================
@@ -51,10 +57,12 @@ service cloud.firestore {
         && request.resource.data.ownerId == uid()
         && isNonEmptyString(request.resource.data.title)
         && isNonEmptyString(request.resource.data.summary)
+        && isNonEmptyString(request.resource.data.titleLower)
         && isValidStatus(request.resource.data.status)
         && isValidPriority(request.resource.data.priority)
         && request.resource.data.tags is list
-        && isValidArchivedAt();
+        && isValidArchivedAt()
+        && isValidTitleLower();
 
       // UPDATE
       allow update: if isSignedIn()
@@ -65,10 +73,12 @@ service cloud.firestore {
         && request.resource.data.ownerId == resource.data.ownerId
         && isNonEmptyString(request.resource.data.title)
         && isNonEmptyString(request.resource.data.summary)
+        && isNonEmptyString(request.resource.data.titleLower)
         && isValidStatus(request.resource.data.status)
         && isValidPriority(request.resource.data.priority)
         && request.resource.data.tags is list
-        && isValidArchivedAt();
+        && isValidArchivedAt()
+        && isValidTitleLower();
 
       // DELETE
       allow delete: if isSignedIn()

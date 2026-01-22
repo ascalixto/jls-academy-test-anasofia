@@ -14,8 +14,12 @@ import {
   where,
   limit,
   startAfter,
+  startAt,
+  endAt,
   type DocumentSnapshot,
   type Unsubscribe,
+  type DocumentData,
+  type QueryDocumentSnapshot,
 } from "firebase/firestore";
 
 import type {
@@ -25,6 +29,30 @@ import type {
   ProductIdeaPriority,
   ProductIdeaTag,
 } from "@/types/productIdeas";
+
+/* ---------------------------------------
+   Lesson 4.3 helpers (search + tag cleanup)
+---------------------------------------- */
+
+function normalizeTitleLower(title: string) {
+  return title.trim().toLowerCase();
+}
+
+/**
+ * Tags normalization for YOUR project:
+ * - trims
+ * - removes empty
+ * - de-dupes while preserving order
+ *
+ * NOTE: we do NOT lowercase because ProductIdeaTag includes "NPD" (uppercase).
+ */
+function normalizeTags(tags: ProductIdeaTag[]) {
+  const cleaned = (tags ?? [])
+    .map((t) => String(t).trim())
+    .filter(Boolean) as ProductIdeaTag[];
+
+  return Array.from(new Set(cleaned)) as ProductIdeaTag[];
+}
 
 /* ---------------------------------------
    Collection + doc reference helpers
@@ -51,6 +79,32 @@ function isNotArchived(idea: ProductIdea) {
   return archivedAt == null;
 }
 
+/**
+ * Normalizer for list/query results used by Lesson 4.3 pagination/search.
+ * Keeps compatibility with your current ProductIdea type (even if titleLower is not typed yet).
+ */
+function normalizeIdeaFromSnap(id: string, data: any): ProductIdea {
+  const title = (data?.title ?? "") as string;
+
+  const normalized = {
+    id,
+    ...(data as Omit<ProductIdea, "id">),
+  } as ProductIdea;
+
+  // ensure these are present/consistent
+  (normalized as any).title = title;
+  (normalized as any).titleLower =
+    data?.titleLower ?? normalizeTitleLower(title);
+
+  if (Array.isArray(data?.tags)) {
+    (normalized as any).tags = normalizeTags(data.tags as ProductIdeaTag[]);
+  } else {
+    (normalized as any).tags = normalizeTags([] as ProductIdeaTag[]);
+  }
+
+  return normalized;
+}
+
 /* ---------------------------------------
    Create operations
 ---------------------------------------- */
@@ -63,12 +117,16 @@ export async function createProductIdea(input: {
   tags: ProductIdeaTag[];
   ownerId: string;
 }) {
+  const titleLower = normalizeTitleLower(input.title);
+  const tags = normalizeTags(input.tags);
+
   const docRef = await addDoc(productIdeasCol(), {
     title: input.title,
+    titleLower,
     summary: input.summary,
     status: input.status,
     priority: input.priority,
-    tags: input.tags,
+    tags,
     ownerId: input.ownerId,
     archivedAt: null,
     createdAt: serverTimestamp(),
@@ -151,6 +209,124 @@ export async function getArchivedProductIdeas(): Promise<ProductIdea[]> {
     id: d.id,
     ...(d.data() as Omit<ProductIdea, "id">),
   }));
+}
+
+/* ---------------------------------------
+   Lesson 4.3 - Filters + Search + Pagination
+---------------------------------------- */
+
+export type IdeaListStatus = ProductIdeaStatus | "all";
+
+export type IdeaListFilters = {
+  status?: IdeaListStatus;
+  tag?: ProductIdeaTag | "";
+  q?: string;
+  archived?: boolean;
+};
+
+export type IdeasPageResult = {
+  items: ProductIdea[];
+  nextCursor: QueryDocumentSnapshot<DocumentData> | null;
+};
+
+const MAX_DATE = new Date(8640000000000000);
+const MIN_DATE = new Date(-8640000000000000);
+
+export async function fetchIdeasPage(options: {
+  filters: IdeaListFilters;
+  pageSize: number;
+  cursor: QueryDocumentSnapshot<DocumentData> | null;
+}): Promise<IdeasPageResult> {
+  const { filters, pageSize, cursor } = options;
+
+  const clauses: any[] = [];
+
+  // Archived filter
+  if (filters.archived) {
+    // inequality requires ordering by archivedAt in Firestore
+    clauses.push(where("archivedAt", ">", MIN_DATE));
+  } else {
+    clauses.push(where("archivedAt", "==", null));
+  }
+
+  // Status filter
+  if (filters.status && filters.status !== "all") {
+    clauses.push(where("status", "==", filters.status));
+  }
+
+  // Tag filter (single tag, exact match to your enum value)
+  if (filters.tag && String(filters.tag).trim().length > 0) {
+    clauses.push(where("tags", "array-contains", filters.tag));
+  }
+
+  const qRaw = (filters.q ?? "").trim().toLowerCase();
+  const hasSearch = qRaw.length > 0;
+
+  /**
+   * Ordering strategy
+   * - Active list (archived=false):
+   *    - searching: orderBy titleLower asc (prefix search via startAt/endAt)
+   *    - not searching: orderBy updatedAt desc
+   * - Archived list (archived=true):
+   *    - not searching: orderBy archivedAt desc (most recently archived first)
+   *    - searching: orderBy archivedAt desc + titleLower asc
+   *      (and use cursor bounds on both fields)
+   */
+  let qBuilt;
+
+  if (filters.archived) {
+    if (hasSearch) {
+      qBuilt = query(
+        productIdeasCol(),
+        ...clauses,
+        orderBy("archivedAt", "desc"),
+        orderBy("titleLower", "asc")
+      );
+
+      // For multi-orderBy prefix search, provide bounds for both fields.
+      // archivedAt is desc, so we bound from MAX_DATE down to MIN_DATE.
+      qBuilt = query(
+        qBuilt,
+        startAt(MAX_DATE, qRaw),
+        endAt(MIN_DATE, qRaw + "\uf8ff")
+      );
+    } else {
+      qBuilt = query(
+        productIdeasCol(),
+        ...clauses,
+        orderBy("archivedAt", "desc")
+      );
+    }
+  } else {
+    if (hasSearch) {
+      qBuilt = query(
+        productIdeasCol(),
+        ...clauses,
+        orderBy("titleLower", "asc")
+      );
+
+      qBuilt = query(qBuilt, startAt(qRaw), endAt(qRaw + "\uf8ff"));
+    } else {
+      qBuilt = query(
+        productIdeasCol(),
+        ...clauses,
+        orderBy("updatedAt", "desc")
+      );
+    }
+  }
+
+  // Pagination
+  qBuilt = cursor
+    ? query(qBuilt, startAfter(cursor), limit(pageSize))
+    : query(qBuilt, limit(pageSize));
+
+  const snap = await getDocs(qBuilt);
+  const items = snap.docs.map((d) => normalizeIdeaFromSnap(d.id, d.data()));
+
+  const nextCursor =
+    snap.docs.length === pageSize ? snap.docs[snap.docs.length - 1] : null;
+
+  return { items, nextCursor };
 }
 
 /* ---------------------------------------
@@ -354,10 +530,20 @@ export async function updateProductIdea(
     Pick<ProductIdea, "title" | "summary" | "status" | "priority" | "tags">
   >
 ) {
-  await updateDoc(productIdeaDoc(ideaId), {
+  const next: any = {
     ...updates,
     updatedAt: serverTimestamp(),
-  });
+  };
+
+  if (typeof updates.title === "string") {
+    next.titleLower = normalizeTitleLower(updates.title);
+  }
+
+  if (Array.isArray(updates.tags)) {
+    next.tags = normalizeTags(updates.tags as ProductIdeaTag[]);
+  }
+
+  await updateDoc(productIdeaDoc(ideaId), next);
 }
 
 export async function archiveProductIdea(ideaId: string) {

@@ -101,6 +101,8 @@ export default function CreateIdeaPage() {
       return
     }
 
+    const safeTags = tags.length ? tags : (["general"] as ProductIdeaTag[])
+
     try {
       setSubmitting(true)
 
@@ -109,7 +111,7 @@ export default function CreateIdeaPage() {
         summary: cleanSummary,
         status,
         priority,
-        tags,
+        tags: safeTags,
         ownerId: user.uid,
       })
 
@@ -215,7 +217,7 @@ export default function CreateIdeaPage() {
               })}
             </div>
             <div className="text-xs text-muted-foreground">
-              Selected: {tags.join(", ")}
+              Selected: {(tags.length ? tags : ["general"]).join(", ")}
             </div>
           </div>
 
