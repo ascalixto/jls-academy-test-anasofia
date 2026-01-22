@@ -16,6 +16,7 @@ import {
   startAfter,
   startAt,
   endAt,
+  Timestamp,
   type DocumentSnapshot,
   type Unsubscribe,
   type DocumentData,
@@ -229,8 +230,9 @@ export type IdeasPageResult = {
   nextCursor: QueryDocumentSnapshot<DocumentData> | null;
 };
 
-const MAX_DATE = new Date(8640000000000000);
-const MIN_DATE = new Date(-8640000000000000);
+// Firestore Timestamp supports years 0001..9999. Use safe bounds.
+const MIN_TS = Timestamp.fromDate(new Date("0001-01-01T00:00:00.000Z"));
+const MAX_TS = Timestamp.fromDate(new Date("9999-12-31T23:59:59.999Z"));
 
 export async function fetchIdeasPage(options: {
   filters: IdeaListFilters;
@@ -244,7 +246,7 @@ export async function fetchIdeasPage(options: {
   // Archived filter
   if (filters.archived) {
     // inequality requires ordering by archivedAt in Firestore
-    clauses.push(where("archivedAt", ">", MIN_DATE));
+    clauses.push(where("archivedAt", ">", MIN_TS));
   } else {
     clauses.push(where("archivedAt", "==", null));
   }
@@ -262,16 +264,6 @@ export async function fetchIdeasPage(options: {
   const qRaw = (filters.q ?? "").trim().toLowerCase();
   const hasSearch = qRaw.length > 0;
 
-  /**
-   * Ordering strategy
-   * - Active list (archived=false):
-   *    - searching: orderBy titleLower asc (prefix search via startAt/endAt)
-   *    - not searching: orderBy updatedAt desc
-   * - Archived list (archived=true):
-   *    - not searching: orderBy archivedAt desc (most recently archived first)
-   *    - searching: orderBy archivedAt desc + titleLower asc
-   *      (and use cursor bounds on both fields)
-   */
   let qBuilt;
 
   if (filters.archived) {
@@ -283,12 +275,11 @@ export async function fetchIdeasPage(options: {
         orderBy("titleLower", "asc")
       );
 
-      // For multi-orderBy prefix search, provide bounds for both fields.
-      // archivedAt is desc, so we bound from MAX_DATE down to MIN_DATE.
+      // Bounds must match orderBy fields (archivedAt desc, titleLower asc)
       qBuilt = query(
         qBuilt,
-        startAt(MAX_DATE, qRaw),
-        endAt(MIN_DATE, qRaw + "\uf8ff")
+        startAt(MAX_TS, qRaw),
+        endAt(MIN_TS, qRaw + "\uf8ff")
       );
     } else {
       qBuilt = query(
@@ -333,11 +324,6 @@ export async function fetchIdeasPage(options: {
    Real-time (Lesson 4.2)
 ---------------------------------------- */
 
-/**
- * Real-time subscription for active ideas list.
- * We listen to "all ideas ordered by updatedAt" and filter out archived on the client
- * to avoid edge cases with older docs missing archivedAt.
- */
 export function subscribeActiveIdeas(input: {
   onData: (ideas: ProductIdea[]) => void;
   onError?: (error: unknown) => void;
@@ -364,10 +350,6 @@ export function subscribeActiveIdeas(input: {
   return unsub;
 }
 
-/**
- * Real-time subscription for active ideas filtered by status.
- * We still filter archived client-side for the same "missing archivedAt" edge case.
- */
 export function subscribeActiveIdeasByStatus(input: {
   status: ProductIdeaStatus;
   onData: (ideas: ProductIdea[]) => void;
@@ -399,9 +381,6 @@ export function subscribeActiveIdeasByStatus(input: {
   return unsub;
 }
 
-/**
- * Real-time subscription for a single idea doc by id.
- */
 export function subscribeIdeaById(input: {
   ideaId: string;
   onData: (idea: ProductIdea | null) => void;
@@ -429,10 +408,6 @@ export function subscribeIdeaById(input: {
   return unsub;
 }
 
-/**
- * Lesson 4.2
- * Real-time subscription for notes list under productIdeas/{ideaId}/notes
- */
 export function subscribeIdeaNotes(input: {
   ideaId: string;
   onData: (notes: ProductIdeaNote[]) => void;
@@ -511,9 +486,6 @@ export function subscribeToIdeaNotes(
   });
 }
 
-/**
- * Optional debug helper to "prove realtime" by bumping updatedAt.
- */
 export async function touchIdea(ideaId: string) {
   await updateDoc(productIdeaDoc(ideaId), {
     updatedAt: serverTimestamp(),

@@ -119,6 +119,143 @@ async function main() {
       // seed one archived idea so you can test Archived toggle + queries
       archived: true,
     },
+
+    // +15 more activities (same theme + style)
+    {
+      id: "idea-6",
+      title: "Write task adoption onboarding email",
+      summary: "Draft a short onboarding email to explain how task adoption works.",
+      status: "draft",
+      priority: "medium",
+      tags: ["copywriting", "marketing"],
+      archived: false,
+    },
+    {
+      id: "idea-7",
+      title: "Create task template for bug reports",
+      summary: "Standardize bug report fields so issues are easier to reproduce.",
+      status: "active",
+      priority: "medium",
+      tags: ["tools", "general"],
+      archived: false,
+    },
+    {
+      id: "idea-8",
+      title: "Design empty state for no tasks",
+      summary: "Create a helpful empty state with a clear CTA and friendly tone.",
+      status: "draft",
+      priority: "low",
+      tags: ["design", "copywriting"],
+      archived: false,
+    },
+    {
+      id: "idea-9",
+      title: "Add “owner” filter to task list",
+      summary: "Filter tasks by owner to reduce noise for larger teams.",
+      status: "paused",
+      priority: "medium",
+      tags: ["tools", "general"],
+      archived: false,
+    },
+    {
+      id: "idea-10",
+      title: "Audit task statuses for consistency",
+      summary: "Confirm status values are consistent across UI, seed data, and Firestore rules.",
+      status: "active",
+      priority: "high",
+      tags: ["tools", "general"],
+      archived: false,
+    },
+    {
+      id: "idea-11",
+      title: "Define success metrics for task adoption MVP",
+      summary: "Pick 3–5 MVP metrics to track adoption and engagement.",
+      status: "draft",
+      priority: "high",
+      tags: ["NPD", "marketing"],
+      archived: false,
+    },
+    {
+      id: "idea-12",
+      title: "Automate daily reminder for unowned tasks",
+      summary: "Send a daily reminder with a link to unadopted tasks.",
+      status: "draft",
+      priority: "medium",
+      tags: ["automation", "tools"],
+      archived: false,
+    },
+    {
+      id: "idea-13",
+      title: "Write microcopy for “Adopt task” button",
+      summary: "Improve button + tooltip text so the action feels clear and low-risk.",
+      status: "active",
+      priority: "low",
+      tags: ["copywriting", "design"],
+      archived: false,
+    },
+    {
+      id: "idea-14",
+      title: "Create quick-start guide for internal users",
+      summary: "One-page guide: how to adopt, update status, and add notes.",
+      status: "draft",
+      priority: "medium",
+      tags: ["copywriting", "tools"],
+      archived: false,
+    },
+    {
+      id: "idea-15",
+      title: "Add keyboard shortcuts for faster triage",
+      summary: "Add simple shortcuts for status changes and opening the notes panel.",
+      status: "paused",
+      priority: "low",
+      tags: ["tools", "general"],
+      archived: false,
+    },
+    {
+      id: "idea-16",
+      title: "Design task priority badge styles",
+      summary: "Create clear visual styles for low/medium/high priority badges.",
+      status: "draft",
+      priority: "low",
+      tags: ["design"],
+      archived: false,
+    },
+    {
+      id: "idea-17",
+      title: "Create weekly “shipped tasks” digest",
+      summary: "Auto-generate a weekly recap of shipped tasks with highlights.",
+      status: "draft",
+      priority: "medium",
+      tags: ["automation", "marketing"],
+      archived: false,
+    },
+    {
+      id: "idea-18",
+      title: "Improve Firestore indexing for task queries",
+      summary: "Add needed composite indexes for common filters (status, priority, tags).",
+      status: "active",
+      priority: "high",
+      tags: ["tools", "automation"],
+      archived: false,
+    },
+    {
+      id: "idea-19",
+      title: "Write PRD for “Notes” improvements",
+      summary: "Define what better notes look like: pinning, sorting, and author visibility.",
+      status: "draft",
+      priority: "medium",
+      tags: ["NPD", "tools"],
+      archived: false,
+    },
+    {
+      id: "idea-20",
+      title: "Draft launch post for internal Slack",
+      summary: "Short announcement post to explain the MVP and invite early adopters.",
+      status: "shipped",
+      priority: "low",
+      tags: ["marketing", "copywriting"],
+      archived: false,
+    },
   ];
 
   for (const idea of ideas) {
@@ -163,7 +300,7 @@ async function main() {
     createdAt: serverTimestamp(),
   });
 
-  console.log("Seeding complete: 5 ideas + notes on idea-1 and idea-2.");
+  console.log("Seeding complete: 20 ideas + notes on idea-1 and idea-2.");
 }
 
 main().catch((e) => {
