@@ -1,5 +1,3 @@
-import React from "react"
-
 export function LayoutSandbox() {
   return (
     <main className="min-h-screen bg-background text-foreground">

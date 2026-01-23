@@ -6,7 +6,6 @@ import { toast } from "sonner"
 import { auth } from "@/lib/firebase"
 
 import type {
-  ProductIdea,
   ProductIdeaNote,
   ProductIdeaPriority,
   ProductIdeaStatus,
@@ -14,12 +13,13 @@ import type {
 } from "../types/productIdeas"
 
 import {
-  subscribeIdeaById,
   subscribeIdeaNotes,
   updateProductIdea,
   archiveProductIdea,
   createProductIdeaNote,
 } from "../lib/firestore/productIdeas"
+
+import { useIdea } from "../features/ideas/hooks/useIdea"
 
 import { PageHeader } from "../components/common/PageHeader"
 import { SectionCard } from "../components/common/SectionCard"
@@ -49,8 +49,6 @@ const ALL_TAGS: ProductIdeaTag[] = [
   "general",
 ]
 
-type LoadState = "loading" | "success" | "error"
-
 function formatDate(value: unknown) {
   const maybeTs = value as { toDate?: () => Date } | null
   if (maybeTs?.toDate) {
@@ -69,12 +67,11 @@ export default function IdeaDetailPage() {
   const { ideaId } = useParams()
   const navigate = useNavigate()
 
-  // Live indicator for the main idea listener 
+  // Live indicator for the main idea listener
   const [liveStatus, setLiveStatus] = useState<"on" | "off">("off")
 
-  const [state, setState] = useState<LoadState>("loading")
-  const [errorMessage, setErrorMessage] = useState("")
-  const [idea, setIdea] = useState<ProductIdea | null>(null)
+  // ✅ Assignment 4.5: idea subscription moved into hook
+  const { idea, loading, error } = useIdea(ideaId)
 
   const [editMode, setEditMode] = useState(false)
 
@@ -108,10 +105,6 @@ export default function IdeaDetailPage() {
   // debug counter
   const [activeListeners, setActiveListeners] = useState(0)
 
-  const isArchived = useMemo(() => {
-    return idea ? (idea as any).archivedAt != null : false
-  }, [idea])
-
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u)
@@ -120,63 +113,43 @@ export default function IdeaDetailPage() {
     return () => unsub()
   }, [])
 
-  // Real-time idea doc
+  // Keep form fields in sync when idea loads/changes
   useEffect(() => {
-    if (!ideaId) {
-      setState("error")
-      setErrorMessage("Missing ideaId.")
+    if (!idea) return
+
+    setTitle(idea.title ?? "")
+    setSummary(idea.summary ?? "")
+    setStatus(idea.status ?? "draft")
+    setPriority(idea.priority ?? "medium")
+    setTags(
+      (idea.tags && idea.tags.length ? idea.tags : ["general"]) as ProductIdeaTag[]
+    )
+  }, [idea])
+
+  // Live status derived from hook state (simple + stable)
+  useEffect(() => {
+    if (loading) {
       setLiveStatus("off")
       return
     }
-
-    // Part C proof: attach log + counter
-    console.log("[RT] idea listener attached", ideaId)
-    setActiveListeners((n) => n + 1)
-
-    setState("loading")
-    setErrorMessage("")
-    setLiveStatus("off")
-
-    const unsub = subscribeIdeaById({
-      ideaId,
-      onData: (data) => {
-        setIdea(data)
-        setLiveStatus("on")
-        setState("success")
-
-        if (data) {
-          setTitle(data.title ?? "")
-          setSummary(data.summary ?? "")
-          setStatus(data.status ?? "draft")
-          setPriority(data.priority ?? "medium")
-          setTags(
-            (data.tags && data.tags.length ? data.tags : ["general"]) as ProductIdeaTag[]
-          )
-        }
-      },
-      onError: (err) => {
-        console.error(err)
-        setLiveStatus("off")
-        setState("error")
-        setErrorMessage("Error loading idea (real-time).")
-        toast.error("Failed to load idea")
-      },
-    })
-
-    return () => {
-      // Part C proof: cleanup log + counter
-      console.log("[RT] idea listener cleanup", ideaId)
-      unsub()
+    if (error) {
       setLiveStatus("off")
-      setActiveListeners((n) => Math.max(0, n - 1))
+      toast.error("Failed to load idea")
+      return
     }
-  }, [ideaId])
+    if (!loading && !error) {
+      setLiveStatus("on")
+    }
+  }, [loading, error])
+
+  const isArchived = useMemo(() => {
+    return idea ? (idea as any).archivedAt != null : false
+  }, [idea])
 
   // Real-time notes list
   useEffect(() => {
     if (!ideaId) return
 
-    // Part C proof: attach log + counter
     console.log("[RT] notes listener attached", ideaId)
     setActiveListeners((n) => n + 1)
 
@@ -198,7 +171,6 @@ export default function IdeaDetailPage() {
     })
 
     return () => {
-      // Part C proof: cleanup log + counter
       console.log("[RT] notes listener cleanup", ideaId)
       unsub()
       setActiveListeners((n) => Math.max(0, n - 1))
@@ -304,7 +276,6 @@ export default function IdeaDetailPage() {
         authorId: user.uid,
       })
       toast.success("Note added")
-      // IMPORTANT: no manual refetch here. Listener will update notes list.
       setNewNote("")
     } catch (err) {
       console.error(err)
@@ -315,8 +286,8 @@ export default function IdeaDetailPage() {
     }
   }
 
-  // ✅ UI State Contract: Loading → Error → Empty → Success
-  if (state === "loading") {
+  // UI State Contract: Loading → Error → Empty → Success
+  if (loading) {
     return (
       <div className="space-y-6">
         <PageHeader title="Idea Detail" subtitle="Loading…" liveStatus={liveStatus} />
@@ -331,13 +302,13 @@ export default function IdeaDetailPage() {
     )
   }
 
-  if (state === "error") {
+  if (error) {
     return (
       <div className="space-y-6">
         <PageHeader title="Idea Detail" subtitle="Error" liveStatus={liveStatus} />
 
         <ErrorState
-          message={errorMessage || "Error loading idea."}
+          message={error || "Error loading idea."}
           onRetry={() => window.location.reload()}
         />
 
@@ -553,7 +524,6 @@ export default function IdeaDetailPage() {
             </p>
           ) : null}
 
-          {/* empty notes state must explain + next action */}
           {notesState === "success" && notes.length === 0 ? (
             <EmptyState
               title="No notes yet"

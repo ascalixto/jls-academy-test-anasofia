@@ -1,4 +1,4 @@
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase"; 
 import {
   addDoc,
   collection,
@@ -697,3 +697,5 @@ export async function getActiveIdeasByCreatedAt(): Promise<ProductIdea[]> {
     ...(d.data() as Omit<ProductIdea, "id">),
   }));
 }
+
+export type { ProductIdea } from "@/types/productIdeas";

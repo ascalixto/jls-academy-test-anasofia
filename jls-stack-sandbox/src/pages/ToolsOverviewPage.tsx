@@ -1,6 +1,5 @@
 import { PageHeader } from "@/components/common/PageHeader"
-import { EmptyState } from "@/components/common/EmptyState"
-import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/states/EmptyState"
 import { useNavigate } from "react-router-dom"
 
 export default function ToolsOverviewPage() {
@@ -16,11 +15,8 @@ export default function ToolsOverviewPage() {
       <EmptyState
         title="No tools yet"
         description="When you create a tool, it will show up here."
-        action={
-          <Button onClick={() => navigate("/create-tool")}>
-            Create your first tool
-          </Button>
-        }
+        actionLabel="Create your first tool"
+        onAction={() => navigate("/create-tool")}
       />
     </div>
   )

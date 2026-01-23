@@ -1,217 +1,72 @@
 import { useEffect, useMemo, useState } from "react"
-import { Link, useSearchParams } from "react-router-dom"
-
-import type { ProductIdea, ProductIdeaStatus, ProductIdeaTag } from "../types/productIdeas"
-import { fetchIdeasPage, type IdeaListFilters } from "../lib/firestore/productIdeas"
+import { Link } from "react-router-dom"
 
 import { PageHeader } from "../components/common/PageHeader"
 import { SectionCard } from "../components/common/SectionCard"
 import { BadgePill } from "../components/common/BadgePill"
 import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select"
 
-// state components
 import { IdeasListSkeleton } from "../components/states/IdeasListSkeleton"
 import { ErrorState } from "../components/states/ErrorState"
 import { EmptyState } from "../components/states/EmptyState"
 
+import { useIdeasFilters } from "../features/ideas/hooks/useIdeasFilters"
+import { useIdeasList } from "../features/ideas/hooks/useIdeasList"
+import { IdeasFiltersBar } from "../features/ideas/components/IdeasFiltersBar"
+
 const PAGE_SIZE = 10
 
-type LoadState = "loading" | "success" | "error"
-type StatusFilter = ProductIdeaStatus | "all"
-
-const ALL_TAGS: ProductIdeaTag[] = [
-  "copywriting",
-  "NPD",
-  "marketing",
-  "design",
-  "automation",
-  "tools",
-  "general",
-]
-
-function formatDate(value: unknown) {
-  const maybeTs = value as { toDate?: () => Date } | null
-  if (maybeTs?.toDate) {
-    return maybeTs.toDate().toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  }
-  return "—"
-}
-
-function getParam(sp: URLSearchParams, key: string, fallback = "") {
-  const v = sp.get(key)
-  return v ?? fallback
-}
 
 export default function IdeasPage() {
+  const { filters, setFilter, resetFilters } = useIdeasFilters()
+  const { items, loading, error, reload, loadMore, hasMore, loadingMore } = useIdeasList(
+    filters,
+    PAGE_SIZE
+  )
 
-  const [searchParams, setSearchParams] = useSearchParams()
-
-  const filters: IdeaListFilters = useMemo(() => {
-    const q = getParam(searchParams, "q", "")
-    const status = getParam(searchParams, "status", "all") as StatusFilter
-    const tag = getParam(searchParams, "tag", "")
-    const archived = getParam(searchParams, "archived", "false") === "true"
-
-    return {
-      q,
-      status,
-      tag: (tag ? (tag as ProductIdeaTag) : "") as any,
-      archived,
-    }
-  }, [searchParams])
-
-  const [state, setState] = useState<LoadState>("loading")
-  const [errorMessage, setErrorMessage] = useState("")
-  const [ideas, setIdeas] = useState<ProductIdea[]>([])
-
-  const [cursor, setCursor] = useState<any>(null)
-  const [loadingMore, setLoadingMore] = useState(false)
-
-  const hasMore = cursor != null
-
-  // retry key forces the main fetch effect to re-run without page refresh
-  const [retryKey, setRetryKey] = useState(0)
-
-  // Local input state for search typing (debounced into URL)
+  // keep original behavior: search typing is debounced before updating URL/filter state
   const [qInput, setQInput] = useState(filters.q ?? "")
 
   useEffect(() => {
     setQInput(filters.q ?? "")
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.q])
 
   useEffect(() => {
     const t = setTimeout(() => {
-      const next = new URLSearchParams(searchParams)
       const trimmed = qInput.trim()
-
-      if (trimmed) next.set("q", trimmed)
-      else next.delete("q")
-
-      setSearchParams(next, { replace: true })
+      setFilter({ q: trimmed })
     }, 300)
 
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qInput])
 
-  function setParam(key: string, value: string) {
-    const next = new URLSearchParams(searchParams)
-    if (!value || value === "all") next.delete(key)
-    else next.set(key, value)
-    setSearchParams(next, { replace: true })
+  // pass a derived filters object to the dumb UI component,
+  // so the input reflects qInput (debounced) but everything else stays live.
+  const uiFilters = useMemo(() => {
+    return { ...filters, q: qInput }
+  }, [filters, qInput])
+
+  // Wrapper so IdeasFiltersBar can stay dumb:
+  // - q updates go to local qInput (debounced)
+  // - everything else updates URL immediately through setFilter
+  function handleFiltersChange(patch: Partial<typeof filters>) {
+    if (typeof patch.q === "string") {
+      setQInput(patch.q)
+      return
+    }
+    setFilter(patch as any)
   }
 
-  function toggleArchived() {
-    const next = new URLSearchParams(searchParams)
-    const current = getParam(next, "archived", "false") === "true"
-    next.set("archived", (!current).toString())
-    setSearchParams(next, { replace: true })
-  }
-
-  function resetList() {
-    setSearchParams(new URLSearchParams(), { replace: true })
-  }
-
-  // differentiate "fresh account" vs "filters/search mismatch"
+  // Match previous fresh account vs mismatch logic.
   const hasAnyFilterActive = useMemo(() => {
     return (
       !!filters.q ||
       (filters.status && filters.status !== "all") ||
-      !!filters.tag ||
+      (filters.tag && filters.tag !== "all") ||
       filters.archived === true
     )
   }, [filters])
-
-  // Load first page whenever URL-backed filters change OR retry is requested
-  useEffect(() => {
-    let alive = true
-
-    async function run() {
-      setState("loading")
-      setErrorMessage("")
-      setCursor(null)
-
-      try {
-        const res = await fetchIdeasPage({
-          filters,
-          pageSize: PAGE_SIZE,
-          cursor: null,
-        })
-
-        if (!alive) return
-        setIdeas(res.items)
-        setCursor(res.nextCursor)
-        setState("success")
-      } catch (err) {
-        console.error(err) // log error
-        if (!alive) return
-        setErrorMessage(
-          "Failed to load ideas. If Firestore asks for an index, create it and retry."
-        )
-        setState("error")
-      }
-    }
-
-    run()
-
-    return () => {
-      alive = false
-    }
-  }, [filters.archived, filters.status, filters.tag, filters.q, retryKey])
-
-  async function onLoadMore() {
-    if (!cursor) return
-
-    setLoadingMore(true)
-    setErrorMessage("")
-
-    try {
-      const res = await fetchIdeasPage({
-        filters,
-        pageSize: PAGE_SIZE,
-        cursor,
-      })
-
-      setIdeas((prev) => [...prev, ...res.items])
-      setCursor(res.nextCursor)
-    } catch (err) {
-      console.error(err) //  log error
-      setErrorMessage("Failed to load more ideas.")
-      setState("error")
-    } finally {
-      setLoadingMore(false)
-    }
-  }
-
-  const activeFiltersText = useMemo(() => {
-    const parts: string[] = []
-    parts.push(filters.archived ? "Archived" : "Active")
-    if (filters.status && filters.status !== "all") parts.push(`Status: ${filters.status}`)
-    if (filters.tag) parts.push(`Tag: ${filters.tag}`)
-    if (filters.q && filters.q.trim()) parts.push(`Search: ${filters.q.trim()}`)
-    return parts.join(" • ")
-  }, [filters.archived, filters.status, filters.tag, filters.q])
-
-  const progressText = useMemo(() => {
-    if (state !== "success") return ""
-    if (ideas.length === 0) return ""
-    return hasMore ? `Showing ${ideas.length}+` : `Showing ${ideas.length}`
-  }, [state, ideas.length, hasMore])
 
   return (
     <div className="space-y-6">
@@ -228,90 +83,30 @@ export default function IdeasPage() {
       </div>
 
       <SectionCard title="Filters + Search">
-        <div className="grid gap-4 md:grid-cols-4">
-          <div className="md:col-span-2 space-y-2">
-            <Input
-              value={qInput}
-              onChange={(e) => setQInput(e.target.value)}
-              placeholder="Search title (starts with…)"
-            />
-            <div className="text-xs text-muted-foreground">
-              Search is prefix-only (starts-with). It doesn’t do full-text.
-            </div>
-          </div>
-
-          <Select
-            value={(filters.status ?? "all") as string}
-            onValueChange={(v) => setParam("status", v)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="paused">Paused</SelectItem>
-              <SelectItem value="shipped">Shipped</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={filters.tag ? String(filters.tag) : "all"}
-            onValueChange={(v) => setParam("tag", v === "all" ? "" : v)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Tag" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All tags</SelectItem>
-              {ALL_TAGS.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="outline" onClick={toggleArchived}>
-              {filters.archived
-                ? "Showing: Archived (click for Active)"
-                : "Showing: Active (click for Archived)"}
-            </Button>
-
-            <Button size="sm" variant="outline" onClick={resetList}>
-              Reset list
-            </Button>
-          </div>
-
-          <div className="text-sm text-muted-foreground">
-            {activeFiltersText}
-            {progressText ? ` • ${progressText}` : ""}
-          </div>
-        </div>
-      </SectionCard>
-
-      {/* error recovery without full refresh */}
-      {state === "loading" ? (
-        <IdeasListSkeleton />
-      ) : state === "error" ? (
-        <ErrorState
-          message={errorMessage || "Failed to load ideas."}
-          onRetry={() => {
-            setRetryKey((k) => k + 1)
+        <IdeasFiltersBar
+          filters={uiFilters}
+          onChange={handleFiltersChange as any}
+          onReset={() => {
+            resetFilters()
+            setQInput("")
           }}
         />
-      ) : ideas.length === 0 ? (
+      </SectionCard>
+
+      {/* UI state contract */}
+      {loading ? <IdeasListSkeleton /> : null}
+
+      {!loading && error ? <ErrorState message={error} onRetry={reload} /> : null}
+
+      {!loading && !error && items.length === 0 ? (
         hasAnyFilterActive ? (
           <EmptyState
             title="No ideas match this view"
             description="Your filters or search didn’t return any results."
             actionLabel="Clear filters"
             onAction={() => {
-              resetList()
+              resetFilters()
+              setQInput("")
             }}
             secondaryActionLabel="Create idea"
             onSecondaryAction={() => {
@@ -328,9 +123,11 @@ export default function IdeasPage() {
             }}
           />
         )
-      ) : (
+      ) : null}
+
+      {!loading && !error && items.length > 0 ? (
         <div className="space-y-4">
-          {ideas.map((idea) => (
+          {items.map((idea: any) => (
             <SectionCard key={idea.id} title={idea.title}>
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
@@ -340,13 +137,9 @@ export default function IdeasPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {idea.tags?.map((t) => (
+                  {idea.tags?.map((t: string) => (
                     <BadgePill key={t} label={t} />
                   ))}
-                </div>
-
-                <div className="text-xs text-muted-foreground">
-                  Updated: {formatDate((idea as any).updatedAt)}
                 </div>
 
                 <div className="pt-2">
@@ -361,16 +154,20 @@ export default function IdeasPage() {
           <div className="flex flex-col items-center gap-2 pt-2">
             <div className="text-xs text-muted-foreground">
               {hasMore
-                ? `Showing ${ideas.length}+ (load more to continue)`
-                : `Showing ${ideas.length} (end of list)`}
+                ? `Showing ${items.length}+ (load more to continue)`
+                : `Showing ${items.length} (end of list)`}
             </div>
 
-            <Button variant="outline" onClick={onLoadMore} disabled={!hasMore || loadingMore}>
-              {loadingMore ? "Loading…" : hasMore ? "Load more" : "No more results"}
+            <Button
+              variant="outline"
+              onClick={loadMore}
+              disabled={!hasMore || loadingMore}
+            >
+              {loadingMore ? "Loading..." : hasMore ? "Load more" : "No more results"}
             </Button>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
