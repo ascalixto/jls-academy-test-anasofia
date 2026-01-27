@@ -15,7 +15,7 @@ import { useIdeasList } from "../features/ideas/hooks/useIdeasList"
 import { IdeasFiltersBar } from "../features/ideas/components/IdeasFiltersBar"
 
 const PAGE_SIZE = 10
-
+const NEW_IDEA_PATH = "/ideas/new"
 
 export default function IdeasPage() {
   const { filters, setFilter, resetFilters } = useIdeasFilters()
@@ -23,6 +23,15 @@ export default function IdeasPage() {
     filters,
     PAGE_SIZE
   )
+
+  function goToNewIdea() {
+    window.location.href = NEW_IDEA_PATH
+  }
+
+  function clearFilters() {
+    resetFilters()
+    setQInput("")
+  }
 
   // keep original behavior: search typing is debounced before updating URL/filter state
   const [qInput, setQInput] = useState(filters.q ?? "")
@@ -58,7 +67,7 @@ export default function IdeasPage() {
     setFilter(patch as any)
   }
 
-  // Match previous fresh account vs mismatch logic.
+  // Match previous fresh account vs mismatch logic
   const hasAnyFilterActive = useMemo(() => {
     return (
       !!filters.q ||
@@ -74,7 +83,7 @@ export default function IdeasPage() {
 
       <div className="flex flex-wrap items-center gap-2">
         <Button asChild size="sm">
-          <Link to="/ideas/new">New Idea</Link>
+          <Link to={NEW_IDEA_PATH}>New Idea</Link>
         </Button>
 
         <Button asChild variant="outline" size="sm">
@@ -86,10 +95,7 @@ export default function IdeasPage() {
         <IdeasFiltersBar
           filters={uiFilters}
           onChange={handleFiltersChange as any}
-          onReset={() => {
-            resetFilters()
-            setQInput("")
-          }}
+          onReset={clearFilters}
         />
       </SectionCard>
 
@@ -104,23 +110,16 @@ export default function IdeasPage() {
             title="No ideas match this view"
             description="Your filters or search didn’t return any results."
             actionLabel="Clear filters"
-            onAction={() => {
-              resetFilters()
-              setQInput("")
-            }}
+            onAction={clearFilters}
             secondaryActionLabel="Create idea"
-            onSecondaryAction={() => {
-              window.location.href = "/ideas/new"
-            }}
+            onSecondaryAction={goToNewIdea}
           />
         ) : (
           <EmptyState
             title="No ideas exist yet"
             description="Get started by creating your first product idea."
             actionLabel="Create idea"
-            onAction={() => {
-              window.location.href = "/ideas/new"
-            }}
+            onAction={goToNewIdea}
           />
         )
       ) : null}
