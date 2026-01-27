@@ -50,15 +50,10 @@ export default function IdeasPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qInput])
 
-  // pass a derived filters object to the dumb UI component,
-  // so the input reflects qInput (debounced) but everything else stays live.
   const uiFilters = useMemo(() => {
     return { ...filters, q: qInput }
   }, [filters, qInput])
 
-  // Wrapper so IdeasFiltersBar can stay dumb:
-  // - q updates go to local qInput (debounced)
-  // - everything else updates URL immediately through setFilter
   function handleFiltersChange(patch: Partial<typeof filters>) {
     if (typeof patch.q === "string") {
       setQInput(patch.q)
@@ -67,7 +62,6 @@ export default function IdeasPage() {
     setFilter(patch as any)
   }
 
-  // Match previous fresh account vs mismatch logic
   const hasAnyFilterActive = useMemo(() => {
     return (
       !!filters.q ||
@@ -99,7 +93,6 @@ export default function IdeasPage() {
         />
       </SectionCard>
 
-      {/* UI state contract */}
       {loading ? <IdeasListSkeleton /> : null}
 
       {!loading && error ? <ErrorState message={error} onRetry={reload} /> : null}
@@ -107,18 +100,18 @@ export default function IdeasPage() {
       {!loading && !error && items.length === 0 ? (
         hasAnyFilterActive ? (
           <EmptyState
-            title="No ideas match this view"
-            description="Your filters or search didn’t return any results."
+            title="No ideas found"
+            description="Nothing matches your current filters. Try clearing them or create a new idea."
             actionLabel="Clear filters"
             onAction={clearFilters}
-            secondaryActionLabel="Create idea"
+            secondaryActionLabel="Create new idea"
             onSecondaryAction={goToNewIdea}
           />
         ) : (
           <EmptyState
-            title="No ideas exist yet"
-            description="Get started by creating your first product idea."
-            actionLabel="Create idea"
+            title="No ideas yet"
+            description="Create your first idea to start tracking it here."
+            actionLabel="Create your first idea"
             onAction={goToNewIdea}
           />
         )
