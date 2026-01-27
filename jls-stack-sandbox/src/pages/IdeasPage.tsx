@@ -33,7 +33,6 @@ export default function IdeasPage() {
     setQInput("")
   }
 
-  // keep original behavior: search typing is debounced before updating URL/filter state
   const [qInput, setQInput] = useState(filters.q ?? "")
 
   useEffect(() => {
@@ -70,6 +69,12 @@ export default function IdeasPage() {
       filters.archived === true
     )
   }, [filters])
+
+  const progressLabel = useMemo(() => {
+    return hasMore
+      ? `Showing ${items.length}+ (load more to continue)`
+      : `Showing ${items.length} (end of list)`
+  }, [hasMore, items.length])
 
   return (
     <div className="space-y-6">
@@ -144,11 +149,7 @@ export default function IdeasPage() {
           ))}
 
           <div className="flex flex-col items-center gap-2 pt-2">
-            <div className="text-xs text-muted-foreground">
-              {hasMore
-                ? `Showing ${items.length}+ (load more to continue)`
-                : `Showing ${items.length} (end of list)`}
-            </div>
+            <div className="text-xs text-muted-foreground">{progressLabel}</div>
 
             <Button
               variant="outline"
