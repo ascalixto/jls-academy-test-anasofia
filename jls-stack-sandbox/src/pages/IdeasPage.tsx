@@ -115,7 +115,7 @@ export default function IdeasPage() {
           />
         ) : (
           <EmptyState
-            title="No ideas exist yet"
+            title="You haven't created any ideas yet"
             description="Get started by creating your first product idea."
             actionLabel="Create idea"
             onAction={() => {
