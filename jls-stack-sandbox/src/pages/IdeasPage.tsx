@@ -70,7 +70,7 @@ export default function IdeasPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Ideas" subtitle="Filter, search, and paginate" />
+      <PageHeader title="Ideas" subtitle="Filter, search, and paginate." />
 
       <div className="flex flex-wrap items-center gap-2">
         <Button asChild size="sm">
