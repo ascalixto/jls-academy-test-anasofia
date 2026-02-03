@@ -7,3 +7,4 @@ This file exists so you can practice Git safely without touching app logic.
 - Practiced working on a branch.
 - clean note A (practice)
 - clean note B (practice)
+- clean note C (practice)
