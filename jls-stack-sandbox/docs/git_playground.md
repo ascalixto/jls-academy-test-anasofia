@@ -6,3 +6,4 @@ This file exists so you can practice Git safely without touching app logic.
 - Created this file.
 - Practiced working on a branch
 - Messy commit A.
+- Messy commit B.
