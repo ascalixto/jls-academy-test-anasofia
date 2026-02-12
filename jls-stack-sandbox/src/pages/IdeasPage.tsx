@@ -114,10 +114,12 @@ export default function IdeasPage() {
           />
         ) : (
           <EmptyState
-            title="No ideas yet"
-            description="Create your first idea to start tracking it here."
-            actionLabel="Create your first idea"
-            onAction={goToNewIdea}
+            title="You haven't created any ideas yet"
+            description="Get started by creating your first product idea."
+            actionLabel="Create idea"
+            onAction={() => {
+              window.location.href = "/ideas/new"
+            }}
           />
         )
       ) : null}
