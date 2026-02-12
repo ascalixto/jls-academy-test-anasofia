@@ -15,7 +15,7 @@ import { useIdeasList } from "../features/ideas/hooks/useIdeasList"
 import { IdeasFiltersBar } from "../features/ideas/components/IdeasFiltersBar"
 
 const PAGE_SIZE = 10
-
+const NEW_IDEA_PATH = "/ideas/new"
 
 export default function IdeasPage() {
   const { filters, setFilter, resetFilters } = useIdeasFilters()
@@ -24,7 +24,15 @@ export default function IdeasPage() {
     PAGE_SIZE
   )
 
-  // keep original behavior: search typing is debounced before updating URL/filter state
+  function goToNewIdea() {
+    window.location.href = NEW_IDEA_PATH
+  }
+
+  function clearFilters() {
+    resetFilters()
+    setQInput("")
+  }
+
   const [qInput, setQInput] = useState(filters.q ?? "")
 
   useEffect(() => {
@@ -41,15 +49,10 @@ export default function IdeasPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qInput])
 
-  // pass a derived filters object to the dumb UI component,
-  // so the input reflects qInput (debounced) but everything else stays live.
   const uiFilters = useMemo(() => {
     return { ...filters, q: qInput }
   }, [filters, qInput])
 
-  // Wrapper so IdeasFiltersBar can stay dumb:
-  // - q updates go to local qInput (debounced)
-  // - everything else updates URL immediately through setFilter
   function handleFiltersChange(patch: Partial<typeof filters>) {
     if (typeof patch.q === "string") {
       setQInput(patch.q)
@@ -58,7 +61,6 @@ export default function IdeasPage() {
     setFilter(patch as any)
   }
 
-  // Match previous fresh account vs mismatch logic.
   const hasAnyFilterActive = useMemo(() => {
     return (
       !!filters.q ||
@@ -68,13 +70,19 @@ export default function IdeasPage() {
     )
   }, [filters])
 
+  const progressLabel = useMemo(() => {
+    return hasMore
+      ? `Showing ${items.length}+ (load more to continue)`
+      : `Showing ${items.length} (end of list)`
+  }, [hasMore, items.length])
+
   return (
     <div className="space-y-6">
       <PageHeader title="Ideas" subtitle="Filter, search, and paginate." />
 
       <div className="flex flex-wrap items-center gap-2">
         <Button asChild size="sm">
-          <Link to="/ideas/new">New Idea</Link>
+          <Link to={NEW_IDEA_PATH}>New Idea</Link>
         </Button>
 
         <Button asChild variant="outline" size="sm">
@@ -86,14 +94,10 @@ export default function IdeasPage() {
         <IdeasFiltersBar
           filters={uiFilters}
           onChange={handleFiltersChange as any}
-          onReset={() => {
-            resetFilters()
-            setQInput("")
-          }}
+          onReset={clearFilters}
         />
       </SectionCard>
 
-      {/* UI state contract */}
       {loading ? <IdeasListSkeleton /> : null}
 
       {!loading && error ? <ErrorState message={error} onRetry={reload} /> : null}
@@ -101,17 +105,12 @@ export default function IdeasPage() {
       {!loading && !error && items.length === 0 ? (
         hasAnyFilterActive ? (
           <EmptyState
-            title="No ideas match this view"
-            description="Your filters or search didn’t return any results."
+            title="No ideas found"
+            description="Nothing matches your current filters. Try clearing them or create a new idea."
             actionLabel="Clear filters"
-            onAction={() => {
-              resetFilters()
-              setQInput("")
-            }}
-            secondaryActionLabel="Create idea"
-            onSecondaryAction={() => {
-              window.location.href = "/ideas/new"
-            }}
+            onAction={clearFilters}
+            secondaryActionLabel="Create new idea"
+            onSecondaryAction={goToNewIdea}
           />
         ) : (
           <EmptyState
@@ -152,11 +151,7 @@ export default function IdeasPage() {
           ))}
 
           <div className="flex flex-col items-center gap-2 pt-2">
-            <div className="text-xs text-muted-foreground">
-              {hasMore
-                ? `Showing ${items.length}+ (load more to continue)`
-                : `Showing ${items.length} (end of list)`}
-            </div>
+            <div className="text-xs text-muted-foreground">{progressLabel}</div>
 
             <Button
               variant="outline"
